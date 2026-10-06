@@ -11,6 +11,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: insightforge
+          POSTGRES_PASSWORD: insightforge
+          POSTGRES_DB: insightforge
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U insightforge"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      IF_DATABASE_URL: postgresql+psycopg://insightforge:insightforge@localhost:5432/insightforge
+      IF_TEST_DATABASE_URL: postgresql+psycopg://insightforge:insightforge@localhost:5432/insightforge
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -19,6 +33,10 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
+      # Migrations must apply cleanly on real PostgreSQL and match the models (no drift).
+      - run: alembic upgrade head
+      - run: alembic check
+      - run: alembic downgrade base
       - run: pytest
 
   frontend:

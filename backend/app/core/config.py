@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     # Comma-separated list in env, e.g. IF_CORS_ORIGINS=http://localhost:3000
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Database (PostgreSQL via psycopg 3). Override with IF_DATABASE_URL.
+    database_url: str = "postgresql+psycopg://insightforge:insightforge@localhost:5432/insightforge"
+    db_echo: bool = False
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v):
