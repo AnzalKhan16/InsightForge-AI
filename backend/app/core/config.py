@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     # Comma-separated list in env, e.g. IF_CORS_ORIGINS=http://localhost:3000
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Auth
+    secret_key: str = "super-secret-key-for-dev-only"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
+
     # Database (PostgreSQL via psycopg 3). Override with IF_DATABASE_URL.
     database_url: str = "postgresql+psycopg://insightforge:insightforge@localhost:5432/insightforge"
     db_echo: bool = False
