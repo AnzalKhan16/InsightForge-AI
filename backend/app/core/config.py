@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 10
 
+    # Storage
+    storage_backend: str = "local"  # local, s3
+    storage_local_dir: str = "./data/raw"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v):

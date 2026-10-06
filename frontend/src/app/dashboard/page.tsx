@@ -50,9 +50,14 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-semibold mb-4">Your Workspaces</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {workspaces.map((ws: any) => (
-            <div key={ws.id} className="bg-white p-6 rounded shadow">
+            <div 
+              key={ws.id} 
+              className="bg-white p-6 rounded shadow cursor-pointer hover:shadow-lg transition-shadow border-t-4 border-blue-600"
+              onClick={() => router.push(`/workspaces/${ws.id}`)}
+            >
               <h3 className="text-xl font-bold mb-2">{ws.name}</h3>
               <p className="text-gray-600">Role: {ws.role}</p>
+              <p className="text-blue-600 text-sm mt-4 font-semibold">Manage Datasets &rarr;</p>
             </div>
           ))}
           {workspaces.length === 0 && <p>No workspaces found.</p>}
