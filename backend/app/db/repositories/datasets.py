@@ -17,7 +17,11 @@ class DatasetRepository(BaseRepository[Dataset]):
         stmt = (
             select(Dataset)
             .where(Dataset.workspace_id == workspace_id, Dataset.deleted_at == None)
-            .options(joinedload(Dataset.versions).joinedload(DatasetVersion.dataset_metadata))
+            .options(
+                joinedload(Dataset.versions).joinedload(DatasetVersion.dataset_metadata),
+                joinedload(Dataset.versions).joinedload(DatasetVersion.artifacts),
+                joinedload(Dataset.versions).joinedload(DatasetVersion.jobs)
+            )
             .order_by(Dataset.created_at.desc())
         )
         return self.session.execute(stmt).scalars().unique().all()
@@ -26,7 +30,11 @@ class DatasetRepository(BaseRepository[Dataset]):
         stmt = (
             select(Dataset)
             .where(Dataset.id == dataset_id, Dataset.workspace_id == workspace_id, Dataset.deleted_at == None)
-            .options(joinedload(Dataset.versions).joinedload(DatasetVersion.dataset_metadata))
+            .options(
+                joinedload(Dataset.versions).joinedload(DatasetVersion.dataset_metadata),
+                joinedload(Dataset.versions).joinedload(DatasetVersion.artifacts),
+                joinedload(Dataset.versions).joinedload(DatasetVersion.jobs)
+            )
         )
         return self.session.execute(stmt).scalars().unique().first()
 

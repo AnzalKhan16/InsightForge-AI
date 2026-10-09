@@ -121,3 +121,63 @@ def delete_dataset(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user:
     dataset.deleted_at = datetime.datetime.now(datetime.timezone.utc)
     session.flush()
     return None
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/clean")
+def clean_dataset(
+    workspace_id: uuid.UUID, 
+    dataset_id: uuid.UUID, 
+    request: dict, 
+    current_user: ActiveUser, 
+    session: SessionDep,
+    background_tasks: BackgroundTasks
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+        
+    latest_version = dataset.versions[-1]
+    
+    from app.db.models.datasets import ProcessingJob
+    from app.db.enums import JobType, JobStatus
+    
+    job = ProcessingJob(
+        workspace_id=workspace_id,
+        created_by_id=current_user.id,
+        version_id=latest_version.id,
+        job_type=JobType.CLEAN,
+        status=JobStatus.QUEUED,
+        params={"operations": request.get("operations", [])}
+    )
+    session.add(job)
+    session.flush()
+    
+    from app.core.cleaning import clean_dataset_task
+    background_tasks.add_task(clean_dataset_task, job_id=job.id)
+    
+    return {"job_id": str(job.id), "message": "Cleaning job started"}
+
+@router.get("/workspaces/{workspace_id}/jobs/{job_id}")
+def get_job_status(workspace_id: uuid.UUID, job_id: uuid.UUID, current_user: ActiveUser, session: SessionDep):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.datasets import ProcessingJob
+    from sqlalchemy import select
+    
+    job = session.execute(
+        select(ProcessingJob).where(ProcessingJob.id == job_id, ProcessingJob.workspace_id == workspace_id)
+    ).scalar_one_or_none()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    return {
+        "id": job.id,
+        "job_type": job.job_type,
+        "status": job.status,
+        "progress": job.progress,
+        "result": job.result,
+        "error_message": job.error_message
+    }

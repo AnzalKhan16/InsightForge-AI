@@ -1,0 +1,8 @@
+id,name,age,email,join_date,revenue,category
+1,John Doe,28,john@example.com,2023-01-15,1000.5,A
+2,Jane Smith,,jane@example.com,2023-02-20,2000.0,B
+3,Bob  Jones,45,bob@example.com,2023-03-10,,C
+4,Alice Brown,32,,2023-04-05,1500.75,A
+5,John Doe,28,john@example.com,2023-01-15,1000.5,A
+6,Tom White,invalid,tom@example.com,2023-05-12,500.0,B
+7,  Sue Green  ,22,sue@example.com,2023-06-18,2500.25,C

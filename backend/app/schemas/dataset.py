@@ -14,6 +14,23 @@ class DatasetMetadataResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class DatasetArtifactResponse(BaseModel):
+    id: UUID
+    kind: str
+    file_format: str
+    size_bytes: int | None = None
+    row_count: int | None = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class DatasetJobResponse(BaseModel):
+    id: UUID
+    job_type: str
+    status: str
+    result: dict | None = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 class DatasetVersionResponse(BaseModel):
     id: UUID
     version_number: int
@@ -24,6 +41,8 @@ class DatasetVersionResponse(BaseModel):
     created_at: datetime
     error_message: str | None = None
     dataset_metadata: DatasetMetadataResponse | None = None
+    artifacts: list[DatasetArtifactResponse] = []
+    jobs: list[DatasetJobResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
 

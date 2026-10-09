@@ -4,7 +4,7 @@ import pandas as pd
 import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from app.db.session import get_sessionmaker
 from app.db.models.datasets import DatasetVersion, DatasetMetadata
 from app.db.enums import ProcessingStatus, DatasetFormat
 from app.core.storage import get_storage
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def profile_dataset_task(version_id: uuid.UUID, workspace_id: uuid.UUID, storage_key: str, format: DatasetFormat):
     try:
-        with SessionLocal() as session:
+        with get_sessionmaker()() as session:
             version = session.execute(
                 select(DatasetVersion).where(DatasetVersion.id == version_id)
             ).scalar_one_or_none()

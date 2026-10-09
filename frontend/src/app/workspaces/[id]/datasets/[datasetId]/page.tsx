@@ -56,9 +56,17 @@ export default function DatasetProfilePage() {
           <h1 className="text-3xl font-bold">{dataset.name} Profile</h1>
           <p className="text-gray-600">v{currentVer?.version_number}</p>
         </div>
-        <button onClick={() => router.push(`/workspaces/${workspaceId}`)} className="text-blue-600 hover:underline">
-          &larr; Back to Datasets
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}/clean`)}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-semibold"
+          >
+            Clean Data
+          </button>
+          <button onClick={() => router.push(`/workspaces/${workspaceId}`)} className="text-blue-600 hover:underline">
+            &larr; Back to Datasets
+          </button>
+        </div>
       </header>
 
       {metadata ? (
@@ -114,6 +122,31 @@ export default function DatasetProfilePage() {
               </table>
             </div>
           </div>
+          
+          {currentVer.jobs && currentVer.jobs.filter((j: any) => j.job_type === 'clean' && j.status === 'succeeded').length > 0 && (
+            <div className="bg-white rounded shadow overflow-hidden mt-8">
+              <div className="px-6 py-4 border-b">
+                <h2 className="text-xl font-semibold">Cleaning History</h2>
+              </div>
+              <div className="p-6">
+                {currentVer.jobs.filter((j: any) => j.job_type === 'clean' && j.status === 'succeeded').map((job: any) => (
+                  <div key={job.id} className="mb-4 last:mb-0 border p-4 rounded bg-gray-50 text-sm">
+                    <p className="font-semibold text-gray-700 mb-2">Job {job.id.substring(0, 8)} - {new Date(job.created_at).toLocaleString()}</p>
+                    <p className="mb-2">Rows: {job.result?.initial_rows} &rarr; {job.result?.final_rows}</p>
+                    <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                      {job.result?.history?.map((h: any, i: number) => (
+                        <li key={i}>
+                          <span className="font-medium">{h.operation}</span>
+                          {h.columns && h.columns.length > 0 && ` on columns: ${h.columns.join(', ')}`}
+                          {h.params && Object.keys(h.params).length > 0 && ` (params: ${JSON.stringify(h.params)})`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <div className="bg-white p-8 rounded shadow text-center text-gray-500">
