@@ -181,3 +181,68 @@ def get_job_status(workspace_id: uuid.UUID, job_id: uuid.UUID, current_user: Act
         "result": job.result,
         "error_message": job.error_message
     }
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/analyze")
+def analyze_dataset(
+    workspace_id: uuid.UUID, 
+    dataset_id: uuid.UUID, 
+    current_user: ActiveUser, 
+    session: SessionDep,
+    background_tasks: BackgroundTasks
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+        
+    latest_version = dataset.versions[-1]
+    
+    from app.db.models.datasets import ProcessingJob
+    from app.db.enums import JobType, JobStatus
+    
+    job = ProcessingJob(
+        workspace_id=workspace_id,
+        created_by_id=current_user.id,
+        version_id=latest_version.id,
+        job_type=JobType.ANALYZE,
+        status=JobStatus.QUEUED,
+        params={}
+    )
+    session.add(job)
+    session.flush()
+    
+    from app.core.analytics_task import analyze_dataset_task
+    background_tasks.add_task(analyze_dataset_task, job_id=job.id)
+    
+    return {"job_id": str(job.id), "message": "Analytics job started"}
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/analyses")
+def get_dataset_analyses(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user: ActiveUser, session: SessionDep):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import SavedAnalysis
+    from app.db.models.datasets import DatasetVersion
+    from sqlalchemy import select
+    
+    stmt = (
+        select(SavedAnalysis)
+        .join(DatasetVersion, SavedAnalysis.version_id == DatasetVersion.id)
+        .where(
+            SavedAnalysis.workspace_id == workspace_id,
+            DatasetVersion.dataset_id == dataset_id
+        )
+        .order_by(SavedAnalysis.created_at.desc())
+    )
+    analyses = session.execute(stmt).scalars().all()
+    
+    return [
+        {
+            "id": a.id,
+            "version_id": a.version_id,
+            "name": a.name,
+            "analysis_type": a.analysis_type,
+            "result": a.result,
+            "created_at": a.created_at
+        } for a in analyses
+    ]

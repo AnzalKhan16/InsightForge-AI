@@ -58,6 +58,12 @@ export default function DatasetProfilePage() {
         </div>
         <div className="flex items-center gap-4">
           <button 
+            onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}/analytics`)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 font-semibold"
+          >
+            Analytics
+          </button>
+          <button 
             onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}/clean`)}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-semibold"
           >
