@@ -32,6 +32,7 @@ async def upload_dataset(
     workspace_id: uuid.UUID,
     current_user: ActiveUser,
     session: SessionDep,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     name: str = Form(...),
     description: str | None = Form(None)
@@ -72,7 +73,7 @@ async def upload_dataset(
     storage.upload_file(io.BytesIO(content), storage_key)
 
     # Save version record
-    repo.create_version(
+    version = repo.create_version(
         dataset_id=dataset.id,
         workspace_id=workspace_id,
         user_id=current_user.id,
@@ -82,6 +83,17 @@ async def upload_dataset(
         storage_key=storage_key,
         checksum=checksum
     )
+    
+    # Enqueue profiling
+    from app.core.profiling import profile_dataset_task
+    background_tasks.add_task(
+        profile_dataset_task,
+        version_id=version.id,
+        workspace_id=workspace_id,
+        storage_key=storage_key,
+        format=dataset_format
+    )
+
     
     # Re-fetch with versions
     return repo.get_by_id_and_workspace(dataset.id, workspace_id)

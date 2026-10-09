@@ -33,6 +33,22 @@ export default function WorkspacePage() {
       return;
     }
     fetchDatasets();
+
+    // Auto-refresh every 3 seconds if any dataset is uploading/processing
+    const interval = setInterval(() => {
+      setDatasets((prevDatasets) => {
+        const needsRefresh = prevDatasets.some(d => {
+          const currentVer = d.versions?.[d.versions.length - 1];
+          return currentVer && (currentVer.status === 'uploaded' || currentVer.status === 'processing');
+        });
+        if (needsRefresh) {
+          fetchDatasets();
+        }
+        return prevDatasets;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [token, workspaceId]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,14 +141,38 @@ export default function WorkspacePage() {
             </div>
             {dataset.versions && dataset.versions.length > 0 ? (
               <div className="text-sm text-gray-600 mt-4">
-                <p><span className="font-semibold">Current Version:</span> v{dataset.versions[dataset.versions.length - 1].version_number}</p>
-                <p><span className="font-semibold">Format:</span> {dataset.versions[dataset.versions.length - 1].format.toUpperCase()}</p>
-                <p><span className="font-semibold">Size:</span> {(dataset.versions[dataset.versions.length - 1].size_bytes / 1024).toFixed(1)} KB</p>
-                <p><span className="font-semibold">Status:</span> 
-                  <span className="ml-2 inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
-                    {dataset.versions[dataset.versions.length - 1].status.toUpperCase()}
-                  </span>
-                </p>
+                {(() => {
+                  const currentVer = dataset.versions[dataset.versions.length - 1];
+                  const isProcessing = currentVer.status === 'processing' || currentVer.status === 'uploaded';
+                  return (
+                    <>
+                      <p><span className="font-semibold">Current Version:</span> v{currentVer.version_number}</p>
+                      <p><span className="font-semibold">Format:</span> {currentVer.format.toUpperCase()}</p>
+                      <p><span className="font-semibold">Size:</span> {(currentVer.size_bytes / 1024).toFixed(1)} KB</p>
+                      <p className="flex items-center gap-2 mt-1"><span className="font-semibold">Status:</span> 
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${currentVer.status === 'completed' ? 'bg-green-100 text-green-800' : currentVer.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {currentVer.status.toUpperCase()}
+                        </span>
+                      </p>
+                      {currentVer.dataset_metadata && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p><span className="font-semibold">Rows:</span> {currentVer.dataset_metadata.row_count}</p>
+                          <p><span className="font-semibold">Columns:</span> {currentVer.dataset_metadata.column_count}</p>
+                        </div>
+                      )}
+                      
+                      <div className="mt-4 flex gap-2">
+                         <button 
+                           onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}`)}
+                           className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm font-semibold hover:bg-blue-100 transition-colors"
+                           disabled={currentVer.status !== 'completed'}
+                         >
+                           {currentVer.status === 'completed' ? 'View Profile' : 'Processing...'}
+                         </button>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-gray-500">No versions found.</p>

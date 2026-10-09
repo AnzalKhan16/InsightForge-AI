@@ -4,6 +4,16 @@ from uuid import UUID
 from app.db.enums import DatasetFormat, ProcessingStatus
 
 
+class DatasetMetadataResponse(BaseModel):
+    id: UUID
+    row_count: int | None = None
+    column_count: int | None = None
+    columns: list | None = None
+    profile: dict | None = None
+    quality: dict | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class DatasetVersionResponse(BaseModel):
     id: UUID
     version_number: int
@@ -13,6 +23,7 @@ class DatasetVersionResponse(BaseModel):
     status: ProcessingStatus
     created_at: datetime
     error_message: str | None = None
+    dataset_metadata: DatasetMetadataResponse | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
