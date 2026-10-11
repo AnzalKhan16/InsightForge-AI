@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 export default function DashboardPage() {
   const { token, user, clearAuth } = useAuthStore();
   const router = useRouter();
-  const [workspaces, setWorkspaces] = useState([]);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
 
   useEffect(() => {
     if (!token) {
