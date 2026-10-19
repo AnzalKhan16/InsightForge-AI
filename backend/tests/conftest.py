@@ -27,18 +27,23 @@ def engine():
     Base.metadata.drop_all(eng)
 
 
+@pytest.fixture(autouse=True)
+def override_db_sessionmaker(engine, monkeypatch):
+    from app.db import session as db_session
+    sm = sessionmaker(bind=engine, expire_on_commit=False, autoflush=False)
+    monkeypatch.setattr(db_session, "get_sessionmaker", lambda: sm)
+    monkeypatch.setattr(db_session, "get_engine", lambda: engine)
+
+
 @pytest.fixture
 def session(engine):
-    """Each test runs inside a transaction that is rolled back."""
-    conn = engine.connect()
-    trans = conn.begin()
-    s = sessionmaker(
-        bind=conn, expire_on_commit=False, autoflush=False, join_transaction_mode="create_savepoint"
-    )()
+    """Each test gets a session and cleans up tables after running."""
+    s = sessionmaker(bind=engine, expire_on_commit=False, autoflush=False)()
     yield s
     s.close()
-    trans.rollback()
-    conn.close()
+    with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
 
 
 @pytest.fixture

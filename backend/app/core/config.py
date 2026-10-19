@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     storage_backend: str = "local"  # local, s3
     storage_local_dir: str = "./data/raw"
 
+    # AI / LLM Integration
+    llm_provider: str = "openai"  # openai, gemini, or mock/deterministic
+    openai_api_key: str | None = None
+    openai_api_base: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    gemini_api_key: str | None = None
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v):

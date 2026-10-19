@@ -246,3 +246,79 @@ def get_dataset_analyses(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current
             "created_at": a.created_at
         } for a in analyses
     ]
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/insights/generate")
+def generate_dataset_insights(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep,
+    background_tasks: BackgroundTasks
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+
+    from app.db.models.datasets import ProcessingJob
+    from app.db.enums import JobType, JobStatus
+
+    job = ProcessingJob(
+        workspace_id=workspace_id,
+        created_by_id=current_user.id,
+        version_id=latest_version.id,
+        job_type=JobType.INSIGHT,
+        status=JobStatus.QUEUED,
+        params={}
+    )
+    session.add(job)
+    session.flush()
+
+    from app.core.insights_task import generate_insights_task
+    background_tasks.add_task(generate_insights_task, job_id=job.id)
+
+    return {"job_id": str(job.id), "message": "Insight generation job started"}
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/insights")
+def get_dataset_insights(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Insight
+    from app.db.models.datasets import DatasetVersion
+    from sqlalchemy import select
+
+    stmt = (
+        select(Insight)
+        .join(DatasetVersion, Insight.version_id == DatasetVersion.id)
+        .where(
+            Insight.workspace_id == workspace_id,
+            DatasetVersion.dataset_id == dataset_id
+        )
+        .order_by(Insight.created_at.desc())
+    )
+    insights = session.execute(stmt).scalars().all()
+
+    return [
+        {
+            "id": i.id,
+            "version_id": i.version_id,
+            "analysis_id": i.analysis_id,
+            "source": i.source,
+            "severity": i.severity,
+            "category": i.category,
+            "title": i.title,
+            "body": i.body,
+            "evidence": i.evidence,
+            "model_name": i.model_name,
+            "prompt_version": i.prompt_version,
+            "created_at": i.created_at,
+        } for i in insights
+    ]
