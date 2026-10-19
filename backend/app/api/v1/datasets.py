@@ -7,6 +7,7 @@ from app.db.repositories.datasets import DatasetRepository
 from app.schemas.dataset import DatasetResponse, DatasetVersionResponse
 from app.core.storage import get_storage
 from app.db.enums import DatasetFormat
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -322,3 +323,50 @@ def get_dataset_insights(
             "created_at": i.created_at,
         } for i in insights
     ]
+
+
+class NLQueryRequest(BaseModel):
+    question: str = Field(..., min_length=2, max_length=500)
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/nl-query")
+def query_dataset_natural_language(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    payload: NLQueryRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+
+    storage = get_storage()
+    try:
+        file_obj = storage.get_file(latest_version.raw_storage_key)
+        file_bytes = file_obj.read()
+        file_obj.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read dataset file from storage: {e}")
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    try:
+        if latest_version.format == DatasetFormat.CSV:
+            df = pd.read_csv(io.BytesIO(file_bytes))
+        elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+            df = pd.read_excel(io.BytesIO(file_bytes))
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse dataset data: {e}")
+
+    from app.core.nl_analytics import execute_nl_query
+    response = execute_nl_query(df, payload.question)
+    return response.model_dump()

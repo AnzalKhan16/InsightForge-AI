@@ -11,10 +11,37 @@ import {
 import { 
   ArrowUpRight, TrendingUp, Users, DollarSign, ShoppingCart, Activity, RefreshCw,
   Sparkles, ShieldCheck, AlertTriangle, AlertOctagon, Info, ChevronDown, ChevronUp,
-  Layers, Filter, Database, CheckCircle2
+  Layers, Filter, Database, CheckCircle2, MessageSquare, Send, CornerDownRight,
+  HelpCircle, BarChart3, Search
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+
+interface NLQueryResult {
+  question: string;
+  operation: string;
+  interpreted_intent: string;
+  answer_markdown: string;
+  data: any[];
+  columns: string[];
+  chart_suggestion?: {
+    type: string;
+    x_axis?: string;
+    y_axis?: string;
+    title?: string;
+    series_name?: string;
+    previous_period?: string;
+    previous_value?: string;
+    current_period?: string;
+    current_value?: string;
+    delta?: string;
+    pct_change?: string;
+    primary_metric?: string;
+    secondary_metric?: string;
+  };
+  summary_metrics: Record<string, any>;
+  suggested_followups: string[];
+}
 
 interface InsightItem {
   id: string;
@@ -52,12 +79,41 @@ export default function AnalyticsPage() {
   const [submittingAnalysis, setSubmittingAnalysis] = useState(false);
   const [submittingInsights, setSubmittingInsights] = useState(false);
   
+  // NL Analytics state
+  const [nlQuestion, setNlQuestion] = useState('');
+  const [submittingNlQuery, setSubmittingNlQuery] = useState(false);
+  const [nlResult, setNlResult] = useState<NLQueryResult | null>(null);
+  const [nlError, setNlError] = useState<string | null>(null);
+
   // Tabs & filters
-  const [activeTab, setActiveTab] = useState<'insights' | 'charts' | 'all'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'charts' | 'all'>('insights');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
+
+  const handleNlQuery = async (queryText?: string) => {
+    const q = queryText || nlQuestion;
+    if (!q.trim()) return;
+    setSubmittingNlQuery(true);
+    setNlError(null);
+    try {
+      const res = await apiFetch<NLQueryResult>(`/workspaces/${workspaceId}/datasets/${datasetId}/nl-query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ question: q.trim() }),
+      });
+      setNlResult(res);
+      setNlQuestion(q);
+    } catch (err: any) {
+      setNlError(err.message || 'Failed to execute natural language query');
+    } finally {
+      setSubmittingNlQuery(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -235,6 +291,18 @@ export default function AnalyticsPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('nlq')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'nlq' 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Ask Data (NL Query)
+          </button>
+
+          <button
             onClick={() => setActiveTab('charts')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
               activeTab === 'charts' 
@@ -350,6 +418,263 @@ export default function AnalyticsPage() {
                     onToggleEvidence={() => setExpandedEvidenceId(expandedEvidenceId === ins.id ? null : ins.id)}
                   />
                 ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* SECTION 1.5: NATURAL LANGUAGE ANALYTICS QUERY INTERFACE */}
+        {(activeTab === 'nlq' || activeTab === 'all') && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-indigo-600" />
+                  Natural Language Analytics & Data Querying
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Ask conversational business questions. Computations are strictly executed using deterministic analytics engines.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Sandboxed Query Execution</span>
+              </div>
+            </div>
+
+            {/* Search Prompt Input & Quick Pills */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleNlQuery();
+                }}
+                className="flex gap-2"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={nlQuestion}
+                    onChange={(e) => setNlQuestion(e.target.value)}
+                    placeholder="Ask anything (e.g. Which products generated the most revenue? Compare this quarter with previous quarter...)"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-slate-800 transition-all"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submittingNlQuery || !nlQuestion.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-3 rounded-xl font-medium text-sm flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                >
+                  {submittingNlQuery ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  <span>{submittingNlQuery ? 'Analyzing...' : 'Ask Data'}</span>
+                </button>
+              </form>
+
+              {/* Suggested Quick Prompt Pills */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <HelpCircle className="w-3.5 h-3.5" /> Try asking:
+                </span>
+                {[
+                  "What was our revenue last month?",
+                  "Which products generated the most revenue?",
+                  "Which region grew the fastest?",
+                  "Compare this quarter with the previous quarter",
+                  "Why did revenue decrease?",
+                  "What were our top customers?",
+                ].map((pill, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleNlQuery(pill)}
+                    className="text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer"
+                  >
+                    {pill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Error Alert */}
+            {nlError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{nlError}</span>
+              </div>
+            )}
+
+            {/* Empty State before any query */}
+            {!nlResult && !submittingNlQuery && !nlError && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[220px]">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3">
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800 mb-1">Interactive Conversational BI</h3>
+                <p className="text-xs text-slate-500 max-w-md">
+                  Type any business query or select a quick question above to run deterministic aggregations, produce markdown analysis, and generate interactive charts.
+                </p>
+              </div>
+            )}
+
+            {/* Loading skeleton */}
+            {submittingNlQuery && (
+              <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center space-y-3">
+                <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+                <p className="text-sm font-semibold text-slate-700">Validating query plan and executing deterministic data engine...</p>
+                <p className="text-xs text-slate-400">Enforcing zero-hallucination mathematical bounds</p>
+              </div>
+            )}
+
+            {/* Result Container */}
+            {nlResult && !submittingNlQuery && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
+                {/* Header with question & operation badge */}
+                <div className="p-6 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                        {nlResult.operation.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {nlResult.interpreted_intent}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      "{nlResult.question}"
+                    </h3>
+                  </div>
+                  <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1 self-start md:self-auto font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Deterministic Math Verified</span>
+                  </div>
+                </div>
+
+                {/* Narrative Answer Section */}
+                <div className="p-6">
+                  <div className="prose prose-slate max-w-none text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
+                    {nlResult.answer_markdown}
+                  </div>
+                </div>
+
+                {/* Visual Chart Section if suggested */}
+                {nlResult.chart_suggestion && (
+                  <div className="p-6 bg-slate-50/30">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
+                      <BarChart3 className="w-4 h-4 text-indigo-600" />
+                      Recommended Visualization: {nlResult.chart_suggestion.title || 'Analysis Chart'}
+                    </h4>
+
+                    {nlResult.chart_suggestion.type === 'bar_chart' && nlResult.data.length > 0 && (
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={nlResult.data} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis 
+                              dataKey={nlResult.chart_suggestion.x_axis || nlResult.columns[0]} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fill: '#64748b', fontSize: 12 }} 
+                            />
+                            <YAxis 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fill: '#64748b', fontSize: 12 }} 
+                              tickFormatter={(v) => Number(v) >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
+                            />
+                            <Tooltip 
+                              cursor={{ fill: '#f8fafc' }}
+                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              formatter={(val: any) => [Number(val).toLocaleString(), nlResult.chart_suggestion?.series_name || 'Value']}
+                            />
+                            <Bar 
+                              dataKey={nlResult.chart_suggestion.y_axis || 'total_value'} 
+                              radius={[6, 6, 0, 0]}
+                            >
+                              {nlResult.data.map((_, idx) => (
+                                <Cell key={`bar-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {nlResult.chart_suggestion.type === 'comparison_cards' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-xl border border-slate-200">
+                          <div className="text-xs text-slate-500 uppercase font-semibold">Previous Period ({nlResult.chart_suggestion.previous_period})</div>
+                          <div className="text-2xl font-bold text-slate-800 mt-1">{nlResult.chart_suggestion.previous_value}</div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-slate-200">
+                          <div className="text-xs text-slate-500 uppercase font-semibold">Current Period ({nlResult.chart_suggestion.current_period})</div>
+                          <div className="text-2xl font-bold text-slate-800 mt-1">{nlResult.chart_suggestion.current_value}</div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/30">
+                          <div className="text-xs text-indigo-700 uppercase font-semibold">Net Variance & Change</div>
+                          <div className="text-2xl font-bold text-indigo-900 mt-1">{nlResult.chart_suggestion.delta} ({nlResult.chart_suggestion.pct_change})</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Structured Data Table */}
+                {nlResult.data && nlResult.data.length > 0 && (
+                  <div className="p-6">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-slate-500" />
+                      Verified Data Records ({nlResult.data.length} rows)
+                    </h4>
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-700 font-semibold uppercase tracking-wider">
+                          <tr>
+                            {nlResult.columns.map((col) => (
+                              <th key={col} className="px-4 py-3">
+                                {col.replace('_', ' ')}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                          {nlResult.data.map((row, rIdx) => (
+                            <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors">
+                              {nlResult.columns.map((col) => (
+                                <td key={col} className="px-4 py-2.5 font-medium">
+                                  {typeof row[col] === 'number' ? Number(row[col]).toLocaleString() : String(row[col])}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggested Follow-up Questions */}
+                {nlResult.suggested_followups && nlResult.suggested_followups.length > 0 && (
+                  <div className="p-6 bg-slate-50/50 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1 mr-1">
+                      <CornerDownRight className="w-3.5 h-3.5" /> Next Steps:
+                    </span>
+                    {nlResult.suggested_followups.map((fUp, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleNlQuery(fUp)}
+                        className="text-xs bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                      >
+                        {fUp}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </section>
