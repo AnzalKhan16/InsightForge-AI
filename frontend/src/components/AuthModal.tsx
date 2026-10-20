@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { X, Lock, Mail, Sparkles, User, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -14,6 +14,10 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
