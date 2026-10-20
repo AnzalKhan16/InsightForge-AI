@@ -1,0 +1,34 @@
+# =============================================================================
+# InsightForge AI - Development Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# =============================================================================
+
+services:
+  backend:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      IF_ENVIRONMENT: development
+      IF_DEBUG: "true"
+      IF_DB_ECHO: "false"
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+      - storage_data:/app/data/raw
+
+  worker:
+    command: ["python", "-m", "app.worker"]
+    environment:
+      IF_ENVIRONMENT: development
+      IF_DEBUG: "true"
+    volumes:
+      - ./backend/app:/app/app:ro
+      - storage_data:/app/data/raw
+
+  frontend:
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public

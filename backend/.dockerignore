@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Python & Caching
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Development Database & Local Storage
+dev.db
+*.sqlite3
+data/raw/*
+!data/raw/.gitkeep
+
+# Environment Files
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.swp

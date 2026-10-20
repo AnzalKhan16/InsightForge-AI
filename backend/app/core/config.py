@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     storage_backend: str = "local"  # local, s3
     storage_local_dir: str = "./data/raw"
 
+    # Redis Cache & Background Queue
+    redis_url: str = "redis://localhost:6379/0"
+
     # AI / LLM Integration
     llm_provider: str = "openai"  # openai, gemini, or mock/deterministic
     openai_api_key: str | None = None

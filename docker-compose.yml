@@ -1,0 +1,125 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: insightforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-insightforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-insightforge}
+      POSTGRES_DB: ${POSTGRES_DB:-insightforge}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-insightforge} -d ${POSTGRES_DB:-insightforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - insightforge-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: insightforge-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - insightforge-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: insightforge-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      IF_ENVIRONMENT: ${IF_ENVIRONMENT:-development}
+      IF_DEBUG: ${IF_DEBUG:-true}
+      IF_CORS_ORIGINS: ${IF_CORS_ORIGINS:-http://localhost:3000}
+      IF_SECRET_KEY: ${IF_SECRET_KEY:-super-secret-key-for-dev-only-min32}
+      IF_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-insightforge}:${POSTGRES_PASSWORD:-insightforge}@db:5432/${POSTGRES_DB:-insightforge}
+      IF_REDIS_URL: redis://redis:6379/0
+      IF_STORAGE_BACKEND: local
+      IF_STORAGE_LOCAL_DIR: /app/data/raw
+      IF_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      IF_GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      - storage_data:/app/data/raw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - insightforge-net
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: insightforge-worker
+    command: ["python", "-m", "app.worker"]
+    restart: unless-stopped
+    environment:
+      IF_ENVIRONMENT: ${IF_ENVIRONMENT:-development}
+      IF_DEBUG: ${IF_DEBUG:-true}
+      IF_SECRET_KEY: ${IF_SECRET_KEY:-super-secret-key-for-dev-only-min32}
+      IF_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-insightforge}:${POSTGRES_PASSWORD:-insightforge}@db:5432/${POSTGRES_DB:-insightforge}
+      IF_REDIS_URL: redis://redis:6379/0
+      IF_STORAGE_BACKEND: local
+      IF_STORAGE_LOCAL_DIR: /app/data/raw
+    volumes:
+      - storage_data:/app/data/raw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - insightforge-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    container_name: insightforge-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - insightforge-net
+
+volumes:
+  postgres_data:
+    name: insightforge_postgres_data
+  redis_data:
+    name: insightforge_redis_data
+  storage_data:
+    name: insightforge_storage_data
+
+networks:
+  insightforge-net:
+    name: insightforge_network
+    driver: bridge
