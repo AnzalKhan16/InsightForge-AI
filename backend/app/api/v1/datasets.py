@@ -553,3 +553,181 @@ def list_dataset_forecasts(
         }
         for r in records
     ]
+
+
+class AnomalyDetectionRequest(BaseModel):
+    method: Optional[str] = None
+    target_column: Optional[str] = None
+
+
+class AnomalyStatusUpdateRequest(BaseModel):
+    status: str
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/anomalies/detect")
+def detect_dataset_anomalies(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    payload: AnomalyDetectionRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    from app.engine.ml.anomaly import run_comprehensive_anomaly_detection, DetectionMethod
+    det_method = None
+    if payload.method:
+        try:
+            det_method = DetectionMethod(payload.method.lower())
+        except Exception:
+            det_method = None
+
+    res = run_comprehensive_anomaly_detection(
+        df=df,
+        method=det_method,
+        target_column=payload.target_column,
+    )
+
+    from app.db.models.analytics import Anomaly
+    from app.db.enums import Severity, AnomalyStatus
+    from sqlalchemy import delete
+
+    # Remove previous detected anomalies for this version
+    session.execute(
+        delete(Anomaly).where(
+            Anomaly.workspace_id == workspace_id,
+            Anomaly.version_id == latest_version.id,
+        )
+    )
+
+    persisted_anomalies = []
+    for a in res["anomalies"]:
+        sev = Severity.CRITICAL if a["severity"] == "critical" else (Severity.WARNING if a["severity"] == "warning" else Severity.INFO)
+        record = Anomaly(
+            workspace_id=workspace_id,
+            version_id=latest_version.id,
+            column_name=a["column_name"],
+            method=a["method"],
+            row_index=a["row_index"],
+            observed_value=a["observed_value"],
+            expected_value=a["expected_value"],
+            score=a["score"],
+            severity=sev,
+            status=AnomalyStatus.OPEN,
+            details={
+                "nature": a["nature"],
+                "title": a["title"],
+                "explanation": a["explanation"],
+                **a["details"],
+            },
+        )
+        session.add(record)
+        session.flush()
+        persisted_anomalies.append({
+            "id": str(record.id),
+            **a
+        })
+
+    session.commit()
+
+    return {
+        **res,
+        "anomalies": persisted_anomalies,
+    }
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/anomalies")
+def get_dataset_anomalies(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Anomaly
+    from app.db.models.datasets import DatasetVersion
+    from sqlalchemy import select
+
+    stmt = (
+        select(Anomaly)
+        .join(DatasetVersion, Anomaly.version_id == DatasetVersion.id)
+        .where(
+            Anomaly.workspace_id == workspace_id,
+            DatasetVersion.dataset_id == dataset_id
+        )
+        .order_by(Anomaly.score.desc().nullslast(), Anomaly.created_at.desc())
+    )
+    records = session.execute(stmt).scalars().all()
+    return [
+        {
+            "id": str(r.id),
+            "version_id": str(r.version_id),
+            "column_name": r.column_name,
+            "method": r.method,
+            "row_index": r.row_index,
+            "observed_value": r.observed_value,
+            "expected_value": r.expected_value,
+            "score": r.score,
+            "severity": r.severity.value if hasattr(r.severity, "value") else str(r.severity),
+            "status": r.status.value if hasattr(r.status, "value") else str(r.status),
+            "nature": r.details.get("nature") if r.details else "detected_anomaly",
+            "title": r.details.get("title") if r.details else f"Anomaly in {r.column_name}",
+            "explanation": r.details.get("explanation") if r.details else "",
+            "details": r.details,
+            "created_at": r.created_at,
+        }
+        for r in records
+    ]
+
+
+@router.patch("/workspaces/{workspace_id}/anomalies/{anomaly_id}")
+def update_anomaly_status(
+    workspace_id: uuid.UUID,
+    anomaly_id: uuid.UUID,
+    payload: AnomalyStatusUpdateRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Anomaly
+    from app.db.enums import AnomalyStatus
+    from sqlalchemy import select
+
+    anomaly = session.execute(
+        select(Anomaly).where(
+            Anomaly.id == anomaly_id,
+            Anomaly.workspace_id == workspace_id
+        )
+    ).scalar_one_or_none()
+
+    if not anomaly:
+        raise HTTPException(status_code=404, detail="Anomaly not found")
+
+    try:
+        anomaly.status = AnomalyStatus(payload.status.lower())
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {payload.status}")
+
+    session.commit()
+    return {"id": str(anomaly.id), "status": anomaly.status.value}

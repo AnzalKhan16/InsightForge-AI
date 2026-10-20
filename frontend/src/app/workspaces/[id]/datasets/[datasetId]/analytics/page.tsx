@@ -12,10 +12,28 @@ import {
   ArrowUpRight, TrendingUp, Users, DollarSign, ShoppingCart, Activity, RefreshCw,
   Sparkles, ShieldCheck, AlertTriangle, AlertOctagon, Info, ChevronDown, ChevronUp,
   Layers, Filter, Database, CheckCircle2, MessageSquare, Send, CornerDownRight,
-  HelpCircle, BarChart3, Search, Calendar, Gauge
+  HelpCircle, BarChart3, Search, Calendar, Gauge, ShieldAlert, EyeOff, Check, X
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+
+interface AnomalyItem {
+  id: string;
+  version_id?: string;
+  column_name: string;
+  method: string;
+  row_index: number | null;
+  observed_value: number;
+  expected_value: number;
+  score: number;
+  severity: 'info' | 'warning' | 'critical';
+  status: 'open' | 'reviewed' | 'dismissed';
+  nature: 'statistical_outlier' | 'detected_anomaly' | 'confirmed_business_issue';
+  title: string;
+  explanation: string;
+  details?: Record<string, any>;
+  created_at?: string;
+}
 
 interface ForecastResult {
   id?: string;
@@ -123,12 +141,91 @@ export default function AnalyticsPage() {
   const [loadingForecast, setLoadingForecast] = useState<boolean>(false);
   const [forecastError, setForecastError] = useState<string | null>(null);
 
+  // Anomaly Detection state
+  const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
+  const [runningAnomalyDetect, setRunningAnomalyDetect] = useState<boolean>(false);
+  const [anomalyError, setAnomalyError] = useState<string | null>(null);
+  const [anomalyTargetCol, setAnomalyTargetCol] = useState<string>('');
+  const [anomalyMethod, setAnomalyMethod] = useState<string>('all');
+  const [anomalyNatureFilter, setAnomalyNatureFilter] = useState<string>('all');
+  const [anomalyStatusFilter, setAnomalyStatusFilter] = useState<string>('all');
+
   // Tabs & filters
-  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'charts' | 'all'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'anomalies' | 'charts' | 'all'>('insights');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
+
+  const runAnomalyDetection = async () => {
+    setRunningAnomalyDetect(true);
+    setAnomalyError(null);
+    try {
+      const payload: Record<string, any> = {};
+      if (anomalyTargetCol) payload.target_column = anomalyTargetCol;
+      if (anomalyMethod !== 'all') payload.method = anomalyMethod;
+      const res = await apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/anomalies/detect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.anomalies) {
+        setAnomalies(res.anomalies);
+      }
+    } catch (err: any) {
+      setAnomalyError(err.message || 'Failed to detect anomalies');
+    } finally {
+      setRunningAnomalyDetect(false);
+    }
+  };
+
+  const updateAnomalyStatus = async (anomalyId: string, newStatus: 'open' | 'reviewed' | 'dismissed') => {
+    try {
+      await apiFetch<any>(`/workspaces/${workspaceId}/anomalies/${anomalyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setAnomalies(prev => prev.map(a => a.id === anomalyId ? { ...a, status: newStatus } : a));
+    } catch (err: any) {
+      console.error('Failed to update anomaly status', err);
+    }
+  };
+
+  const filteredAnomalies = useMemo(() => {
+    return anomalies.filter(a => {
+      if (anomalyNatureFilter !== 'all' && a.nature !== anomalyNatureFilter) return false;
+      if (anomalyStatusFilter !== 'all' && a.status !== anomalyStatusFilter) return false;
+      return true;
+    });
+  }, [anomalies, anomalyNatureFilter, anomalyStatusFilter]);
+
+  const anomalyMetrics = useMemo(() => {
+    const total = anomalies.length;
+    const confirmedIssues = anomalies.filter(a => a.nature === 'confirmed_business_issue').length;
+    const detectedAnomalies = anomalies.filter(a => a.nature === 'detected_anomaly').length;
+    const statisticalOutliers = anomalies.filter(a => a.nature === 'statistical_outlier').length;
+    const reviewedOrDismissed = anomalies.filter(a => a.status === 'reviewed' || a.status === 'dismissed').length;
+    return { total, confirmedIssues, detectedAnomalies, statisticalOutliers, reviewedOrDismissed };
+  }, [anomalies]);
+
+  const numericColumns = useMemo(() => {
+    if (forecastSchema?.metric_columns && forecastSchema.metric_columns.length > 0) {
+      return forecastSchema.metric_columns;
+    }
+    if (dataset?.current_version?.metadata_obj?.columns) {
+      return dataset.current_version.metadata_obj.columns
+        .filter((c: any) => c.data_type === 'number' || c.data_type === 'integer' || c.data_type === 'float')
+        .map((c: any) => c.name);
+    }
+    return ['revenue', 'amount', 'quantity', 'sales', 'price'];
+  }, [forecastSchema, dataset]);
 
   const handleNlQuery = async (queryText?: string) => {
     const q = queryText || nlQuestion;
@@ -181,7 +278,7 @@ export default function AnalyticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ds, an, ins, fcSchema, fcs] = await Promise.all([
+      const [ds, an, ins, fcSchema, fcs, anoms] = await Promise.all([
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -197,6 +294,9 @@ export default function AnalyticsPage() {
         apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecasts`, {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => []),
+        apiFetch<AnomalyItem[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/anomalies`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => []),
       ]);
       setDataset(ds);
       setAnalyses(an);
@@ -206,9 +306,15 @@ export default function AnalyticsPage() {
         if (fcSchema.primary_metric && !selectedForecastMetric) {
           setSelectedForecastMetric(fcSchema.primary_metric);
         }
+        if (fcSchema.primary_metric && !anomalyTargetCol) {
+          setAnomalyTargetCol(fcSchema.primary_metric);
+        }
       }
       if (fcs && fcs.length > 0 && fcs[0].result) {
         setForecastResult(fcs[0].result);
+      }
+      if (anoms && Array.isArray(anoms)) {
+        setAnomalies(anoms);
       }
     } catch (err: any) {
       console.error("Failed to fetch analytics or insights", err);
@@ -425,6 +531,23 @@ export default function AnalyticsPage() {
           >
             <TrendingUp className="w-4 h-4" />
             Forecasting
+          </button>
+
+          <button
+            onClick={() => setActiveTab('anomalies')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'anomalies' 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <AlertOctagon className="w-4 h-4" />
+            Anomaly Detection
+            {anomalies.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'anomalies' ? 'bg-indigo-500 text-white' : 'bg-rose-100 text-rose-700 font-bold'}`}>
+                {anomalies.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -1114,6 +1237,382 @@ export default function AnalyticsPage() {
                 )}
               </>
             )}
+          </section>
+        )}
+
+        {/* SECTION 1.9: ANOMALY DETECTION */}
+        {(activeTab === 'anomalies' || activeTab === 'all') && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <AlertOctagon className="w-5 h-5 text-indigo-600" />
+                  Statistically Grounded Anomaly & Outlier Detection
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Parametric Z-Score, Tukey IQR fences, and unsupervised Isolation Forest with explainable business classifications.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Zero-False-Accusation Guarantee (Outliers ≠ Fraud)</span>
+              </div>
+            </div>
+
+            {/* Metric KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Flagged</div>
+                <div className="text-2xl font-extrabold text-slate-900 mt-1">{anomalyMetrics.total}</div>
+                <div className="text-xs text-slate-500 mt-1">Across all algorithms</div>
+              </div>
+
+              <div className="bg-rose-50/50 p-5 rounded-2xl border border-rose-200 shadow-2xs">
+                <div className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  Confirmed Issues
+                </div>
+                <div className="text-2xl font-extrabold text-rose-900 mt-1">{anomalyMetrics.confirmedIssues}</div>
+                <div className="text-xs text-rose-600 mt-1">Invariants (e.g. negative values)</div>
+              </div>
+
+              <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-200 shadow-2xs">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Detected Anomalies
+                </div>
+                <div className="text-2xl font-extrabold text-amber-900 mt-1">{anomalyMetrics.detectedAnomalies}</div>
+                <div className="text-xs text-amber-600 mt-1">Volume drops & multivariate pattern</div>
+              </div>
+
+              <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-200 shadow-2xs">
+                <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                  Statistical Outliers
+                </div>
+                <div className="text-2xl font-extrabold text-indigo-900 mt-1">{anomalyMetrics.statisticalOutliers}</div>
+                <div className="text-xs text-indigo-600 mt-1">Legitimate high-value VIP spikes</div>
+              </div>
+
+              <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-200 shadow-2xs">
+                <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Triaged / Resolved
+                </div>
+                <div className="text-2xl font-extrabold text-emerald-900 mt-1">{anomalyMetrics.reviewedOrDismissed}</div>
+                <div className="text-xs text-emerald-600 mt-1">Reviewed or dismissed</div>
+              </div>
+            </div>
+
+            {/* Scan Controls Bar */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Target Numeric Dimension
+                  </label>
+                  <select
+                    value={anomalyTargetCol}
+                    onChange={(e) => setAnomalyTargetCol(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    {numericColumns.map((col: string) => (
+                      <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Detection Algorithm
+                  </label>
+                  <select
+                    value={anomalyMethod}
+                    onChange={(e) => setAnomalyMethod(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    <option value="all">All Methods (Z-Score + IQR + Isolation Forest)</option>
+                    <option value="zscore">Z-Score (Gaussian Standard Deviation Bounds)</option>
+                    <option value="iqr">Tukey's IQR Fences (Distribution-Free)</option>
+                    <option value="isolation_forest">Isolation Forest (Multivariate Isolation)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <button
+                    onClick={runAnomalyDetection}
+                    disabled={runningAnomalyDetect}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${runningAnomalyDetect ? 'animate-spin' : ''}`} />
+                    <span>{runningAnomalyDetect ? 'Running Statistical & ML Scans...' : 'Scan For Anomalies'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {anomalyError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{anomalyError}</span>
+              </div>
+            )}
+
+            {/* Triage & Nature Filters Bar */}
+            {anomalies.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Classification:</span>
+                  <button
+                    onClick={() => setAnomalyNatureFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      anomalyNatureFilter === 'all'
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    All ({anomalies.length})
+                  </button>
+                  <button
+                    onClick={() => setAnomalyNatureFilter('confirmed_business_issue')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      anomalyNatureFilter === 'confirmed_business_issue'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    Confirmed Issues ({anomalyMetrics.confirmedIssues})
+                  </button>
+                  <button
+                    onClick={() => setAnomalyNatureFilter('detected_anomaly')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      anomalyNatureFilter === 'detected_anomaly'
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
+                    }`}
+                  >
+                    Detected Anomalies ({anomalyMetrics.detectedAnomalies})
+                  </button>
+                  <button
+                    onClick={() => setAnomalyNatureFilter('statistical_outlier')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      anomalyNatureFilter === 'statistical_outlier'
+                        ? 'bg-indigo-600 text-white shadow-2xs'
+                        : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    Statistical Outliers ({anomalyMetrics.statisticalOutliers})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Triage:</span>
+                  <select
+                    value={anomalyStatusFilter}
+                    onChange={(e) => setAnomalyStatusFilter(e.target.value)}
+                    className="bg-white border border-slate-200 text-xs font-medium text-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="open">Open Only</option>
+                    <option value="reviewed">Reviewed Only</option>
+                    <option value="dismissed">Dismissed Only</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state when no anomalies */}
+            {anomalies.length === 0 && !runningAnomalyDetect && (
+              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                  <AlertOctagon className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">Anomaly Detection Engine Ready</h3>
+                <p className="text-slate-500 max-w-md text-xs mb-6">
+                  Run a scan to evaluate statistical outlier bounds (Z-Score & IQR) and multidimensional Isolation Forest paths without false fraud accusations.
+                </p>
+                <button
+                  onClick={runAnomalyDetection}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                >
+                  Scan Dataset Now
+                </button>
+              </div>
+            )}
+
+            {/* Anomaly Cards List */}
+            {filteredAnomalies.length > 0 && (
+              <div className="space-y-4">
+                {filteredAnomalies.map((item) => {
+                  const isConfirmed = item.nature === 'confirmed_business_issue';
+                  const isOutlier = item.nature === 'statistical_outlier';
+                  const isAnomaly = item.nature === 'detected_anomaly';
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`bg-white rounded-2xl border p-6 shadow-sm transition-all hover:shadow-md ${
+                        item.status === 'dismissed' 
+                          ? 'opacity-60 border-slate-200 bg-slate-50/50' 
+                          : isConfirmed
+                            ? 'border-rose-200 ring-1 ring-rose-100'
+                            : isOutlier
+                              ? 'border-indigo-200'
+                              : 'border-amber-200'
+                      }`}
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div className="space-y-3 flex-1">
+                          {/* Badges row */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {isConfirmed && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
+                                Confirmed Business Issue
+                              </span>
+                            )}
+                            {isAnomaly && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                Detected Anomaly
+                              </span>
+                            )}
+                            {isOutlier && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                                Statistical Outlier (Non-Defective)
+                              </span>
+                            )}
+
+                            <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 uppercase">
+                              {item.method.replace('_', ' ')}
+                            </span>
+
+                            {item.row_index != null && (
+                              <span className="px-2.5 py-0.5 rounded-md text-xs font-mono bg-slate-100 text-slate-600">
+                                Row #{item.row_index}
+                              </span>
+                            )}
+
+                            <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                              Metric: <strong className="font-semibold">{item.column_name}</strong>
+                            </span>
+
+                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold ${
+                              item.status === 'reviewed' 
+                                ? 'bg-emerald-100 text-emerald-800' 
+                                : item.status === 'dismissed' 
+                                  ? 'bg-slate-200 text-slate-700' 
+                                  : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              Status: {item.status.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {/* Title & Business Explanation */}
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+                            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{item.explanation}</p>
+                          </div>
+
+                          {/* Contextual dimension tags if available */}
+                          {item.details?.row_context && Object.keys(item.details.row_context).length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {Object.entries(item.details.row_context).map(([k, v]) => (
+                                <span key={k} className="text-xs bg-slate-50 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md">
+                                  <strong className="text-slate-800 capitalize">{k.replace('_', ' ')}:</strong> {String(v)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Observed vs Expected Baseline & Triage Controls */}
+                        <div className="flex lg:flex-col items-end justify-between lg:justify-start gap-4 lg:min-w-[200px] border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-6">
+                          <div className="text-right">
+                            <div className="text-xs text-slate-500 font-medium">Observed vs Expected</div>
+                            <div className="text-lg font-extrabold text-slate-900">
+                              ${item.observed_value.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              Baseline: ${item.expected_value.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-indigo-600 font-semibold mt-1">
+                              Score: {Math.round(item.score * 100)}% Confidence
+                            </div>
+                          </div>
+
+                          {/* Triage action buttons */}
+                          <div className="flex items-center gap-2">
+                            {item.status === 'open' ? (
+                              <>
+                                <button
+                                  onClick={() => updateAnomalyStatus(item.id, 'reviewed')}
+                                  title="Mark as reviewed"
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Review</span>
+                                </button>
+                                <button
+                                  onClick={() => updateAnomalyStatus(item.id, 'dismissed')}
+                                  title="Dismiss anomaly"
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer"
+                                >
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                  <span>Dismiss</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => updateAnomalyStatus(item.id, 'open')}
+                                title="Re-open anomaly"
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+                              >
+                                Re-open
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Methodology & Limitations Box */}
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  Z-Score Parametric Model
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Evaluates observations against mean and standard deviation (|z| &gt; 2.5). Invariants like negative revenues are immediately escalated.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-indigo-600" />
+                  Tukey's IQR Fences
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Distribution-free quartile spread [Q1 - 1.5×IQR, Q3 + 1.5×IQR]. Robust against heavy skewness and extreme tail distortion.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  Isolation Forest ML
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Unsupervised decision tree partitioning. Measures structural isolation across multiple continuous dimensions simultaneously.
+                </p>
+              </div>
+            </div>
           </section>
         )}
 
