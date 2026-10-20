@@ -1,13 +1,13 @@
 import io
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.nl_analytics import (
+    NLQueryOperation,
     detect_dataset_schema,
     execute_nl_query,
-    NLQueryOperation,
-    parse_query_plan_deterministic,
 )
 
 

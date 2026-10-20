@@ -1,12 +1,14 @@
 import uuid
+
 import pytest
+
 from app.core.insights import (
     extract_structured_facts,
     generate_deterministic_insights,
-    generate_llm_insights,
     generate_insights_for_analysis,
+    generate_llm_insights,
 )
-from app.db.enums import Severity, InsightSource
+from app.db.enums import Severity
 
 
 @pytest.fixture

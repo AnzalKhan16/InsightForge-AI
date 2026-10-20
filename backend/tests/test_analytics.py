@@ -1,5 +1,7 @@
 import pandas as pd
+
 from app.core.analytics import BusinessAnalyticsEngine
+
 
 def test_analytics_engine():
     # Realistic dataset mock

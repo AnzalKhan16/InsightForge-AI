@@ -24,19 +24,16 @@ Tests:
 """
 import io
 import uuid
-import pytest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from fastapi.testclient import TestClient
 
-from app.engine.ml.forecasting import generate_forecast, detect_temporal_schema
-from app.engine.ml.anomaly import run_comprehensive_anomaly_detection, AnomalyNature
-from app.engine.ml.segmentation import detect_segmentation_schema, calculate_rfm_segmentation
-from app.core.reports import generate_executive_report, generate_prescriptive_recommendations
-from app.core.profiling import profile_dataset_task
-from app.db.enums import DatasetFormat, ProcessingStatus
+from app.core.reports import generate_executive_report
 from app.core.storage import get_storage
-
+from app.engine.ml.anomaly import run_comprehensive_anomaly_detection
+from app.engine.ml.forecasting import generate_forecast
+from app.engine.ml.segmentation import calculate_rfm_segmentation
 
 # ---------------------------------------------------------------------------
 # 1. DATA INTEGRITY & PARSING ROBUSTNESS

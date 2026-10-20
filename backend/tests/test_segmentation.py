@@ -1,16 +1,16 @@
 import io
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
 from app.engine.ml.segmentation import (
-    detect_segmentation_schema,
-    calculate_rfm_segmentation,
-    calculate_kmeans_segmentation,
-    calculate_abc_pareto_segmentation,
-    run_segmentation,
-    SegmentationSuitabilityError,
     SegmentationMethod,
+    SegmentationSuitabilityError,
+    calculate_abc_pareto_segmentation,
+    calculate_kmeans_segmentation,
+    calculate_rfm_segmentation,
+    detect_segmentation_schema,
 )
 
 
@@ -80,8 +80,6 @@ def test_rfm_customer_segmentation(sales_df):
     assert result["total_monetary"] > 0
     assert len(result["segments"]) > 0
 
-    # Alice has highest frequency, monetary, and recency -> Champion / High tier
-    champions = [s for s in result["segments"] if "Champion" in s["label"]]
     top_segment = result["segments"][0]
     assert top_segment["total_monetary"] > 0
     assert top_segment["percentage_of_monetary"] > 0

@@ -18,6 +18,7 @@ Enterprise-grade, deterministic business intelligence and strategic AI analytics
 - [Executive Report Generation](docs/report_generation.md)
 - [Comprehensive QA Testing Matrix](docs/comprehensive_testing.md)
 - [Docker Containerization & Deployment](docs/docker_deployment.md)
+- [CI/CD Automation Pipeline](docs/cicd_pipeline.md)
 
 ---
 
@@ -40,7 +41,7 @@ Enterprise-grade, deterministic business intelligence and strategic AI analytics
 - [x] Phase 15 — Boardroom Executive Briefing & Report Generation
 - [x] Phase 16 — Comprehensive QA & Security Testing (86/86 Tests Passed)
 - [x] Phase 17 — Docker Containerization (Decoupled Multi-Service Stack)
-- [ ] Phase 18 — CI/CD Pipeline
+- [x] Phase 18 — CI/CD Pipeline (GitHub Actions Workflows)
 - [ ] Phase 19 — Production Deployment
 
 ---

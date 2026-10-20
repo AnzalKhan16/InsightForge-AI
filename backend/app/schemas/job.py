@@ -1,7 +1,10 @@
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
-from app.db.enums import JobType, JobStatus
+
+from app.db.enums import JobStatus, JobType
+
 
 class JobResponse(BaseModel):
     id: UUID

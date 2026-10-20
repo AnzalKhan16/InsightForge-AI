@@ -48,8 +48,8 @@ def session(engine):
 
 @pytest.fixture
 def client(session):
-    from app.main import app
     from app.db.session import get_db
+    from app.main import app
 
     def override_get_db():
         yield session

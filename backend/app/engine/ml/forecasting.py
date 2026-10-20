@@ -17,7 +17,8 @@ Constraints:
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -36,7 +37,7 @@ class BacktestMetrics:
     mape_pct: float
     holdout_periods: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "mae": round(self.mae, 2),
             "rmse": round(self.rmse, 2),
@@ -50,10 +51,10 @@ class TimeSeriesSuitabilityError(ValueError):
     pass
 
 
-def detect_temporal_schema(df: pd.DataFrame) -> Dict[str, Any]:
+def detect_temporal_schema(df: pd.DataFrame) -> dict[str, Any]:
     """Detects date columns and candidate numerical metrics for time-series forecasting."""
-    date_cols: List[str] = []
-    metric_cols: List[str] = []
+    date_cols: list[str] = []
+    metric_cols: list[str] = []
 
     for col in df.columns:
         col_str = str(col)
@@ -100,8 +101,8 @@ def prepare_time_series(
     df: pd.DataFrame,
     time_column: str,
     target_column: str,
-    frequency: Optional[str] = None
-) -> Tuple[pd.DataFrame, str]:
+    frequency: str | None = None
+) -> tuple[pd.DataFrame, str]:
     """Cleans, parses dates, infers frequency, and aggregates time-series values."""
     if time_column not in df.columns:
         raise TimeSeriesSuitabilityError(f"Time column '{time_column}' not found in dataset.")
@@ -206,7 +207,7 @@ class LinearTrendModel:
 class HoltLinearModel:
     """Holt's Linear Exponential Smoothing (Level + Trend) with optimal alpha, beta."""
 
-    def __init__(self, alpha: Optional[float] = None, beta: Optional[float] = None):
+    def __init__(self, alpha: float | None = None, beta: float | None = None):
         self.alpha: float = alpha if alpha is not None else 0.3
         self.beta: float = beta if beta is not None else 0.1
         self.final_level: float = 0.0
@@ -304,7 +305,7 @@ def backtest_model(
     model_cls,
     y: np.ndarray,
     holdout_periods: int = 2
-) -> Tuple[BacktestMetrics, Any]:
+) -> tuple[BacktestMetrics, Any]:
     """Evaluates forecasting model on holdout historical data."""
     n = len(y)
     if n <= holdout_periods + 2:
@@ -342,9 +343,9 @@ def generate_forecast(
     time_column: str,
     target_column: str,
     horizon: int = 6,
-    frequency: Optional[str] = None,
+    frequency: str | None = None,
     preferred_model: ForecastModelType = ForecastModelType.AUTO,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """End-to-end time-series forecasting pipeline.
     
     Returns:

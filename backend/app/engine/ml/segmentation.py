@@ -20,9 +20,9 @@ Architecture:
       - Strict deterministic calculations (No LLM math or ungrounded clustering).
       - Transparent assumptions, limitations, and actionable business playbooks per segment.
 """
-from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -71,7 +71,7 @@ MONETARY_KEYWORDS = [
 ]
 
 
-def detect_segmentation_schema(df: pd.DataFrame) -> Dict[str, Any]:
+def detect_segmentation_schema(df: pd.DataFrame) -> dict[str, Any]:
     """Inspects dataset structure and determines suitability for RFM, K-Means, and ABC Pareto."""
     col_names = [str(c) for c in df.columns]
     col_lower = {c: c.lower().strip() for c in col_names}
@@ -169,7 +169,7 @@ def calculate_rfm_segmentation(
     entity_col: str,
     date_col: str,
     monetary_col: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculates deterministic Recency, Frequency, and Monetary quintile scores and business tiers."""
     if entity_col not in df.columns or date_col not in df.columns or monetary_col not in df.columns:
         raise SegmentationSuitabilityError(
@@ -215,7 +215,7 @@ def calculate_rfm_segmentation(
     rfm["m_score"] = np.ceil(m_pct * 5).astype(int).clip(1, 5)
 
     # Deterministic Business Tier Mapping
-    def assign_rfm_segment(row) -> Tuple[str, str, str]:
+    def assign_rfm_segment(row) -> tuple[str, str, str]:
         r = row["r_score"]
         f = row["f_score"]
         m = row["m_score"]
@@ -289,7 +289,7 @@ def calculate_rfm_segmentation(
     total_monetary = float(rfm["monetary"].sum())
 
     # Build structured segment summaries
-    segments: List[Dict[str, Any]] = []
+    segments: list[dict[str, Any]] = []
     for seg_name, group in rfm.groupby("segment"):
         count = len(group)
         seg_monetary = float(group["monetary"].sum())
@@ -367,10 +367,10 @@ def calculate_rfm_segmentation(
 
 def calculate_kmeans_segmentation(
     df: pd.DataFrame,
-    feature_cols: List[str],
-    entity_col: Optional[str] = None,
-    k: Optional[int] = None,
-) -> Dict[str, Any]:
+    feature_cols: list[str],
+    entity_col: str | None = None,
+    k: int | None = None,
+) -> dict[str, Any]:
     """Clusters entities or records across continuous numerical dimensions using scikit-learn KMeans."""
     valid_features = [c for c in feature_cols if c in df.columns and pd.api.types.is_numeric_dtype(df[c])]
     if len(valid_features) < 2:
@@ -406,7 +406,7 @@ def calculate_kmeans_segmentation(
     # Determine optimal k if not provided
     best_k = k
     silhouette = 0.0
-    evaluations: Dict[int, float] = {}
+    evaluations: dict[int, float] = {}
 
     max_k = min(6, n_samples - 1)
     if not best_k or best_k < 2 or best_k > max_k:
@@ -442,7 +442,7 @@ def calculate_kmeans_segmentation(
     global_means = {f: float(working_df[f].mean()) for f in valid_features}
 
     # Derive cluster business labels and profiles
-    segments: List[Dict[str, Any]] = []
+    segments: list[dict[str, Any]] = []
     primary_metric = valid_features[0]
     total_primary = float(working_df[primary_metric].sum()) if total_primary_sum_valid(working_df[primary_metric]) else 1.0
 
@@ -518,10 +518,10 @@ def total_primary_sum_valid(series: pd.Series) -> bool:
 
 def generate_cluster_label(
     cluster_idx: int,
-    cluster_means: Dict[str, float],
-    global_means: Dict[str, float],
-    features: List[str]
-) -> Tuple[str, str, str]:
+    cluster_means: dict[str, float],
+    global_means: dict[str, float],
+    features: list[str]
+) -> tuple[str, str, str]:
     """Derives intuitive business labels and recommendations by contrasting cluster means to global means."""
     diffs = {}
     for f in features:
@@ -567,7 +567,7 @@ def calculate_abc_pareto_segmentation(
     df: pd.DataFrame,
     product_col: str,
     monetary_col: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculates classic 80/15/5 Pareto ABC catalog segmentation for products or services."""
     if product_col not in df.columns or monetary_col not in df.columns:
         raise SegmentationSuitabilityError(
@@ -633,7 +633,7 @@ def calculate_abc_pareto_segmentation(
         },
     }
 
-    segments: List[Dict[str, Any]] = []
+    segments: list[dict[str, Any]] = []
     for cls_name in ["Class A", "Class B", "Class C"]:
         sub_df = agg_df[agg_df["abc_class"] == cls_name]
         count = len(sub_df)
@@ -696,12 +696,12 @@ def calculate_abc_pareto_segmentation(
 def run_segmentation(
     df: pd.DataFrame,
     method: str = "auto",
-    entity_col: Optional[str] = None,
-    date_col: Optional[str] = None,
-    monetary_col: Optional[str] = None,
-    feature_cols: Optional[List[str]] = None,
-    k: Optional[int] = None,
-) -> Dict[str, Any]:
+    entity_col: str | None = None,
+    date_col: str | None = None,
+    monetary_col: str | None = None,
+    feature_cols: list[str] | None = None,
+    k: int | None = None,
+) -> dict[str, Any]:
     """Orchestrates segmentation runs by inspecting schema and executing chosen or auto-selected model."""
     schema = detect_segmentation_schema(df)
 

@@ -1,14 +1,15 @@
-import io
-import uuid
-import pandas as pd
 import datetime
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from app.db.session import get_sessionmaker
-from app.db.models.datasets import DatasetVersion, DatasetMetadata
-from app.db.enums import ProcessingStatus, DatasetFormat
-from app.core.storage import get_storage
+import io
 import logging
+import uuid
+
+import pandas as pd
+from sqlalchemy import select
+
+from app.core.storage import get_storage
+from app.db.enums import DatasetFormat, ProcessingStatus
+from app.db.models.datasets import DatasetMetadata, DatasetVersion
+from app.db.session import get_sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,7 @@ def profile_dataset_task(version_id: uuid.UUID, workspace_id: uuid.UUID, storage
                 session.add(metadata)
                 
                 version.status = ProcessingStatus.COMPLETED
-                version.processed_at = datetime.datetime.now(datetime.timezone.utc)
+                version.processed_at = datetime.datetime.now(datetime.UTC)
                 session.commit()
                 
             except Exception as e:
@@ -106,5 +107,5 @@ def profile_dataset_task(version_id: uuid.UUID, workspace_id: uuid.UUID, storage
                 version.error_message = str(e)
                 session.commit()
                 
-    except Exception as e:
+    except Exception:
         logger.exception("Fatal error in profile_dataset_task")

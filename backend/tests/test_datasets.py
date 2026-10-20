@@ -1,8 +1,6 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.db.models.datasets import Dataset
-from sqlalchemy import select
 import io
+
+from fastapi.testclient import TestClient
 
 
 def test_upload_dataset(client: TestClient, session):

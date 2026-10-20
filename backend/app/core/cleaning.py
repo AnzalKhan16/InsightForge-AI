@@ -1,15 +1,17 @@
-import io
-import uuid
-import pandas as pd
 import datetime
-from typing import Any
-from sqlalchemy import select
-from app.db.session import get_sessionmaker
-from app.db.models.datasets import DatasetVersion, DatasetArtifact, ProcessingJob
-from app.db.enums import JobStatus, ArtifactKind, DatasetFormat
-from app.core.storage import get_storage
-import logging
 import hashlib
+import io
+import logging
+import uuid
+from typing import Any
+
+import pandas as pd
+from sqlalchemy import select
+
+from app.core.storage import get_storage
+from app.db.enums import ArtifactKind, DatasetFormat, JobStatus
+from app.db.models.datasets import DatasetArtifact, DatasetVersion, ProcessingJob
+from app.db.session import get_sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,7 @@ def clean_dataset_task(job_id: uuid.UUID):
                 return
                 
             job.status = JobStatus.RUNNING
-            job.started_at = datetime.datetime.now(datetime.timezone.utc)
+            job.started_at = datetime.datetime.now(datetime.UTC)
             session.commit()
             
             try:
@@ -143,7 +145,7 @@ def clean_dataset_task(job_id: uuid.UUID):
                 
                 job.status = JobStatus.SUCCEEDED
                 job.progress = 100
-                job.finished_at = datetime.datetime.now(datetime.timezone.utc)
+                job.finished_at = datetime.datetime.now(datetime.UTC)
                 job.result = {
                     "initial_rows": initial_rows,
                     "final_rows": len(df),
@@ -156,8 +158,8 @@ def clean_dataset_task(job_id: uuid.UUID):
                 logger.exception("Error cleaning dataset")
                 job.status = JobStatus.FAILED
                 job.error_message = str(e)
-                job.finished_at = datetime.datetime.now(datetime.timezone.utc)
+                job.finished_at = datetime.datetime.now(datetime.UTC)
                 session.commit()
                 
-    except Exception as e:
+    except Exception:
         logger.exception("Fatal error in clean_dataset_task")

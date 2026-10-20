@@ -21,7 +21,8 @@ Constraints:
 import json
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 from pydantic import BaseModel, Field
 
@@ -39,12 +40,12 @@ class InsightPayload(BaseModel):
     category: str
     severity: Severity = Severity.INFO
     source: InsightSource = InsightSource.DETERMINISTIC
-    observed_facts: List[str] = Field(default_factory=list)
-    calculated_metrics: Dict[str, Any] = Field(default_factory=dict)
+    observed_facts: list[str] = Field(default_factory=list)
+    calculated_metrics: dict[str, Any] = Field(default_factory=dict)
     interpretation: str
-    recommendations: List[str] = Field(default_factory=list)
-    evidence: Dict[str, Any] = Field(default_factory=dict)
-    model_name: Optional[str] = None
+    recommendations: list[str] = Field(default_factory=list)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    model_name: str | None = None
     prompt_version: str = PROMPT_VERSION
 
     def format_body(self) -> str:
@@ -72,7 +73,7 @@ class InsightPayload(BaseModel):
         return "\n\n".join(sections)
 
 
-def extract_structured_facts(analytics_result: Dict[str, Any]) -> Dict[str, Any]:
+def extract_structured_facts(analytics_result: dict[str, Any]) -> dict[str, Any]:
     """Deterministically extracts verified facts and pre-computed metrics from analytics output."""
     raw_metrics = analytics_result.get("metrics") or {}
     raw_time_series = analytics_result.get("time_series") or []
@@ -194,9 +195,9 @@ def extract_structured_facts(analytics_result: Dict[str, Any]) -> Dict[str, Any]
     }
 
 
-def generate_deterministic_insights(structured_facts: Dict[str, Any]) -> List[InsightPayload]:
+def generate_deterministic_insights(structured_facts: dict[str, Any]) -> list[InsightPayload]:
     """Generates rigorous, professional business insights grounded in verified deterministic facts."""
-    insights: List[InsightPayload] = []
+    insights: list[InsightPayload] = []
     core = structured_facts.get("core_facts") or {}
     trend = structured_facts.get("trend_facts")
     breakdowns = structured_facts.get("breakdown_facts") or {}
@@ -288,7 +289,7 @@ def generate_deterministic_insights(structured_facts: Dict[str, Any]) -> List[In
                 f"affecting '{top['label']}' poses an asymmetric downside risk to total enterprise revenue."
             )
             recs = [
-                f"Establish strategic hedging by accelerating product investment and distribution for secondary segments.",
+                "Establish strategic hedging by accelerating product investment and distribution for secondary segments.",
                 f"Review supplier/vendor contracts tied to '{top['label']}' to prevent single-point-of-failure exposure.",
                 f"Test cross-promotions bundling '{top['label']}' with '{ru['label'] if ru else 'secondary offerings'}' to balance revenue mix.",
             ]
@@ -300,7 +301,7 @@ def generate_deterministic_insights(structured_facts: Dict[str, Any]) -> List[In
                 "While leadership in this segment provides strong positioning, diversifying the revenue foundation will improve long-term enterprise resilience."
             )
             recs = [
-                f"Allocate incremental marketing budget to cultivate underrepresented categories.",
+                "Allocate incremental marketing budget to cultivate underrepresented categories.",
                 f"Conduct customer surveys to determine why adoption is concentrated in '{top['label']}'.",
             ]
         else:
@@ -455,7 +456,7 @@ def generate_deterministic_insights(structured_facts: Dict[str, Any]) -> List[In
     return insights
 
 
-def generate_llm_insights(structured_facts: Dict[str, Any]) -> List[InsightPayload]:
+def generate_llm_insights(structured_facts: dict[str, Any]) -> list[InsightPayload]:
     """Generates AI insights using LLM interpreting strictly pre-computed facts.
     
     Falls back gracefully to deterministic generation if keys are absent or API fails.
@@ -550,14 +551,14 @@ def generate_llm_insights(structured_facts: Dict[str, Any]) -> List[InsightPaylo
 def generate_insights_for_analysis(
     workspace_id: uuid.UUID,
     version_id: uuid.UUID,
-    analysis_id: Optional[uuid.UUID],
-    analytics_result: Dict[str, Any],
-) -> List[Insight]:
+    analysis_id: uuid.UUID | None,
+    analytics_result: dict[str, Any],
+) -> list[Insight]:
     """Orchestrates fact extraction, interpretation generation, and creates DB Insight models."""
     facts = extract_structured_facts(analytics_result)
     payloads = generate_llm_insights(facts)
 
-    models: List[Insight] = []
+    models: list[Insight] = []
     for p in payloads:
         insight = Insight(
             workspace_id=workspace_id,

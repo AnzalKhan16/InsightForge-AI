@@ -1,16 +1,17 @@
 import io
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db.enums import Severity, AnomalyStatus
+from app.db.enums import Severity
 from app.engine.ml.anomaly import (
-    detect_zscore_anomalies,
+    AnomalyNature,
+    DetectionMethod,
     detect_iqr_anomalies,
     detect_isolation_forest_anomalies,
+    detect_zscore_anomalies,
     run_comprehensive_anomaly_detection,
-    DetectionMethod,
-    AnomalyNature,
 )
 
 

@@ -1,14 +1,15 @@
-import uuid
 import hashlib
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks, Response
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Response, UploadFile
+from pydantic import BaseModel, Field
+
 from app.api.deps import ActiveUser, SessionDep
-from app.db.repositories.core import WorkspaceRepository
-from app.db.repositories.datasets import DatasetRepository
-from app.schemas.dataset import DatasetResponse, DatasetVersionResponse
 from app.core.storage import get_storage
 from app.db.enums import DatasetFormat
-from pydantic import BaseModel, Field
+from app.db.repositories.core import WorkspaceRepository
+from app.db.repositories.datasets import DatasetRepository
+from app.schemas.dataset import DatasetResponse
 
 router = APIRouter()
 
@@ -122,7 +123,7 @@ def delete_dataset(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user:
         raise HTTPException(status_code=404, detail="Dataset not found")
     
     import datetime
-    dataset.deleted_at = datetime.datetime.now(datetime.timezone.utc)
+    dataset.deleted_at = datetime.datetime.now(datetime.UTC)
     session.flush()
     return None
 
@@ -145,8 +146,8 @@ def clean_dataset(
         
     latest_version = dataset.versions[-1]
     
+    from app.db.enums import JobStatus, JobType
     from app.db.models.datasets import ProcessingJob
-    from app.db.enums import JobType, JobStatus
     
     job = ProcessingJob(
         workspace_id=workspace_id,
@@ -167,8 +168,9 @@ def clean_dataset(
 @router.get("/workspaces/{workspace_id}/jobs/{job_id}")
 def get_job_status(workspace_id: uuid.UUID, job_id: uuid.UUID, current_user: ActiveUser, session: SessionDep):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.datasets import ProcessingJob
     from sqlalchemy import select
+
+    from app.db.models.datasets import ProcessingJob
     
     job = session.execute(
         select(ProcessingJob).where(ProcessingJob.id == job_id, ProcessingJob.workspace_id == workspace_id)
@@ -203,8 +205,8 @@ def analyze_dataset(
         
     latest_version = dataset.versions[-1]
     
+    from app.db.enums import JobStatus, JobType
     from app.db.models.datasets import ProcessingJob
-    from app.db.enums import JobType, JobStatus
     
     job = ProcessingJob(
         workspace_id=workspace_id,
@@ -225,9 +227,10 @@ def analyze_dataset(
 @router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/analyses")
 def get_dataset_analyses(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user: ActiveUser, session: SessionDep):
     _check_workspace_access(session, workspace_id, current_user.id)
+    from sqlalchemy import select
+
     from app.db.models.analytics import SavedAnalysis
     from app.db.models.datasets import DatasetVersion
-    from sqlalchemy import select
     
     stmt = (
         select(SavedAnalysis)
@@ -268,8 +271,8 @@ def generate_dataset_insights(
 
     latest_version = dataset.versions[-1]
 
+    from app.db.enums import JobStatus, JobType
     from app.db.models.datasets import ProcessingJob
-    from app.db.enums import JobType, JobStatus
 
     job = ProcessingJob(
         workspace_id=workspace_id,
@@ -295,9 +298,10 @@ def get_dataset_insights(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
+    from sqlalchemy import select
+
     from app.db.models.analytics import Insight
     from app.db.models.datasets import DatasetVersion
-    from sqlalchemy import select
 
     stmt = (
         select(Insight)
@@ -358,7 +362,9 @@ def query_dataset_natural_language(
         raise HTTPException(status_code=500, detail=f"Failed to read dataset file from storage: {e}")
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     try:
         if latest_version.format == DatasetFormat.CSV:
@@ -376,10 +382,10 @@ def query_dataset_natural_language(
 
 
 class ForecastRequest(BaseModel):
-    target_column: Optional[str] = None
-    time_column: Optional[str] = None
+    target_column: str | None = None
+    time_column: str | None = None
     horizon: int = Field(default=6, ge=1, le=24)
-    frequency: Optional[str] = None
+    frequency: str | None = None
     model_type: str = "auto"
 
 
@@ -404,7 +410,9 @@ def get_dataset_forecast_schema(
     file_obj.close()
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     if latest_version.format == DatasetFormat.CSV:
         df = pd.read_csv(io.BytesIO(file_bytes))
@@ -439,7 +447,9 @@ def run_dataset_forecast(
     file_obj.close()
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     if latest_version.format == DatasetFormat.CSV:
         df = pd.read_csv(io.BytesIO(file_bytes))
@@ -449,10 +459,10 @@ def run_dataset_forecast(
         raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
 
     from app.engine.ml.forecasting import (
-        detect_temporal_schema,
-        generate_forecast,
         ForecastModelType,
         TimeSeriesSuitabilityError,
+        detect_temporal_schema,
+        generate_forecast,
     )
 
     schema = detect_temporal_schema(df)
@@ -489,8 +499,8 @@ def run_dataset_forecast(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Forecasting engine failed: {e}")
 
-    from app.db.models.analytics import Forecast
     from app.db.enums import ResultStatus
+    from app.db.models.analytics import Forecast
 
     record = Forecast(
         workspace_id=workspace_id,
@@ -524,9 +534,10 @@ def list_dataset_forecasts(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
+    from sqlalchemy import select
+
     from app.db.models.analytics import Forecast
     from app.db.models.datasets import DatasetVersion
-    from sqlalchemy import select
 
     stmt = (
         select(Forecast)
@@ -558,8 +569,8 @@ def list_dataset_forecasts(
 
 
 class AnomalyDetectionRequest(BaseModel):
-    method: Optional[str] = None
-    target_column: Optional[str] = None
+    method: str | None = None
+    target_column: str | None = None
 
 
 class AnomalyStatusUpdateRequest(BaseModel):
@@ -588,7 +599,9 @@ def detect_dataset_anomalies(
     file_obj.close()
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     if latest_version.format == DatasetFormat.CSV:
         df = pd.read_csv(io.BytesIO(file_bytes))
@@ -597,7 +610,7 @@ def detect_dataset_anomalies(
     else:
         raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
 
-    from app.engine.ml.anomaly import run_comprehensive_anomaly_detection, DetectionMethod
+    from app.engine.ml.anomaly import DetectionMethod, run_comprehensive_anomaly_detection
     det_method = None
     if payload.method:
         try:
@@ -611,9 +624,10 @@ def detect_dataset_anomalies(
         target_column=payload.target_column,
     )
 
-    from app.db.models.analytics import Anomaly
-    from app.db.enums import Severity, AnomalyStatus
     from sqlalchemy import delete
+
+    from app.db.enums import AnomalyStatus, Severity
+    from app.db.models.analytics import Anomaly
 
     # Remove previous detected anomalies for this version
     session.execute(
@@ -667,9 +681,10 @@ def get_dataset_anomalies(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
+    from sqlalchemy import select
+
     from app.db.models.analytics import Anomaly
     from app.db.models.datasets import DatasetVersion
-    from sqlalchemy import select
 
     stmt = (
         select(Anomaly)
@@ -712,9 +727,10 @@ def update_anomaly_status(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.analytics import Anomaly
-    from app.db.enums import AnomalyStatus
     from sqlalchemy import select
+
+    from app.db.enums import AnomalyStatus
+    from app.db.models.analytics import Anomaly
 
     anomaly = session.execute(
         select(Anomaly).where(
@@ -736,12 +752,12 @@ def update_anomaly_status(
 
 
 class SegmentationRequest(BaseModel):
-    method: Optional[str] = "auto"
-    entity_column: Optional[str] = None
-    date_column: Optional[str] = None
-    monetary_column: Optional[str] = None
-    feature_columns: Optional[List[str]] = None
-    k: Optional[int] = None
+    method: str | None = "auto"
+    entity_column: str | None = None
+    date_column: str | None = None
+    monetary_column: str | None = None
+    feature_columns: list[str] | None = None
+    k: int | None = None
 
 
 @router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/segmentation/schema")
@@ -764,7 +780,9 @@ def get_segmentation_schema_endpoint(
     file_obj.close()
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     if latest_version.format == DatasetFormat.CSV:
         df = pd.read_csv(io.BytesIO(file_bytes))
@@ -798,7 +816,9 @@ def run_segmentation_endpoint(
     file_obj.close()
 
     import io
+
     import pandas as pd
+
     from app.db.enums import DatasetFormat
     if latest_version.format == DatasetFormat.CSV:
         df = pd.read_csv(io.BytesIO(file_bytes))
@@ -807,7 +827,7 @@ def run_segmentation_endpoint(
     else:
         raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
 
-    from app.engine.ml.segmentation import run_segmentation, SegmentationSuitabilityError
+    from app.engine.ml.segmentation import SegmentationSuitabilityError, run_segmentation
     try:
         res = run_segmentation(
             df=df,
@@ -861,9 +881,10 @@ def list_dataset_segments(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
+    from sqlalchemy import select
+
     from app.db.models.analytics import Segment
     from app.db.models.datasets import DatasetVersion
-    from sqlalchemy import select
 
     # Find the most recent run_id for this dataset
     latest_run_stmt = (
@@ -917,8 +938,9 @@ def list_dataset_segments(
 
 
 def _gather_dataset_analytical_assets(session, workspace_id: uuid.UUID, dataset_id: uuid.UUID, latest_version_id: uuid.UUID):
-    from app.db.models.analytics import SavedAnalysis, Insight, Forecast, Anomaly, Segment
     from sqlalchemy import select
+
+    from app.db.models.analytics import Anomaly, Forecast, Insight, SavedAnalysis, Segment
 
     # 1. Metrics from auto analysis
     analysis_stmt = (
@@ -1044,7 +1066,7 @@ def get_dataset_recommendations_endpoint(
 
 
 class ReportCreateRequest(BaseModel):
-    title: Optional[str] = None
+    title: str | None = None
 
 
 @router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/reports")
@@ -1073,7 +1095,9 @@ def create_dataset_report_endpoint(
         content_bytes = file_obj.read()
         file_obj.close()
         import io
+
         import pandas as pd
+
         from app.db.enums import DatasetFormat
         if latest_version.format == DatasetFormat.CSV:
             df = pd.read_csv(io.BytesIO(content_bytes))
@@ -1104,8 +1128,8 @@ def create_dataset_report_endpoint(
     storage.upload_file(io.BytesIO(report_data["markdown_content"].encode("utf-8")), storage_key)
 
     # Save to database
-    from app.db.models.analytics import Report
     from app.db.enums import ReportStatus
+    from app.db.models.analytics import Report
     report_record = Report(
         id=report_id,
         workspace_id=workspace_id,
@@ -1138,8 +1162,9 @@ def list_dataset_reports_endpoint(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.analytics import Report
     from sqlalchemy import select
+
+    from app.db.models.analytics import Report
 
     stmt = (
         select(Report)
@@ -1170,8 +1195,9 @@ def get_report_endpoint(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.analytics import Report
     from sqlalchemy import select
+
+    from app.db.models.analytics import Report
 
     report = session.execute(
         select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
@@ -1199,9 +1225,11 @@ def download_report_markdown(
     format: str = "markdown",
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.analytics import Report
-    from sqlalchemy import select
     import json
+
+    from sqlalchemy import select
+
+    from app.db.models.analytics import Report
 
     report = session.execute(
         select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
@@ -1259,8 +1287,9 @@ def view_report_html(
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
-    from app.db.models.analytics import Report
     from sqlalchemy import select
+
+    from app.db.models.analytics import Report
 
     report = session.execute(
         select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)

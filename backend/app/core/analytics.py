@@ -1,7 +1,7 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, List
 import logging
+from typing import Any
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +40,10 @@ class BusinessAnalyticsEngine:
                         self.date_cols.append(col)
                         if col in self.dimensions:
                             self.dimensions.remove(col)
-                    except:
+                    except Exception:
                         pass
                         
-    def get_core_metrics(self) -> Dict[str, Any]:
+    def get_core_metrics(self) -> dict[str, Any]:
         result = {
             "order_count": len(self.df),
             "revenue": None,
@@ -85,7 +85,7 @@ class BusinessAnalyticsEngine:
             
         return result
         
-    def get_time_series(self) -> List[Dict[str, Any]]:
+    def get_time_series(self) -> list[dict[str, Any]]:
         if not self.date_cols:
             return []
             
@@ -109,7 +109,7 @@ class BusinessAnalyticsEngine:
             ]
         return []
         
-    def get_dimension_breakdowns(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_dimension_breakdowns(self) -> dict[str, list[dict[str, Any]]]:
         breakdowns = {}
         metric_col = self.metrics[0] if self.metrics else None
         
@@ -127,7 +127,7 @@ class BusinessAnalyticsEngine:
             
         return breakdowns
 
-    def analyze(self) -> Dict[str, Any]:
+    def analyze(self) -> dict[str, Any]:
         return {
             "metrics": self.get_core_metrics(),
             "time_series": self.get_time_series(),

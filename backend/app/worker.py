@@ -3,16 +3,17 @@
 Polls and processes asynchronous dataset profiling, data cleaning,
 and analytical batch jobs from the ProcessingJob table and Redis queue.
 """
-import time
-import signal
-import sys
 import logging
+import signal
+import time
+
 from sqlalchemy import select
-from app.db.session import get_sessionmaker
-from app.db.models.datasets import ProcessingJob
-from app.db.enums import JobStatus, JobType
-from app.core.cleaning import clean_dataset_task
+
 from app.core.analytics_task import analyze_dataset_task
+from app.core.cleaning import clean_dataset_task
+from app.db.enums import JobStatus, JobType
+from app.db.models.datasets import ProcessingJob
+from app.db.session import get_sessionmaker
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [Worker] %(message)s")
 logger = logging.getLogger("worker")

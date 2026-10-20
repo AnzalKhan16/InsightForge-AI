@@ -29,8 +29,9 @@ Architecture:
       - Persists metadata to database (`Report` model) and artifact files to object storage.
 """
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 import pandas as pd
 
 
@@ -54,14 +55,14 @@ class RecommendationPriority:
 # ---------------------------------------------------------------------------
 
 def generate_prescriptive_recommendations(
-    metrics: Optional[Dict[str, Any]] = None,
-    insights: Optional[List[Dict[str, Any]]] = None,
-    forecast: Optional[Dict[str, Any]] = None,
-    anomalies: Optional[List[Dict[str, Any]]] = None,
-    segments: Optional[Dict[str, Any]] = None,
-) -> List[Dict[str, Any]]:
+    metrics: dict[str, Any] | None = None,
+    insights: list[dict[str, Any]] | None = None,
+    forecast: dict[str, Any] | None = None,
+    anomalies: list[dict[str, Any]] | None = None,
+    segments: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """Synthesizes empirical findings across analytics layers into prioritized, actionable business playbooks."""
-    recommendations: List[Dict[str, Any]] = []
+    recommendations: list[dict[str, Any]] = []
 
     # 1. Critical Invariant / Anomaly Recommendations
     if anomalies:
@@ -297,9 +298,9 @@ def make_ascii_bar(pct: float, length: int = 10) -> str:
 
 
 def extract_reporting_period(
-    df: Optional[pd.DataFrame] = None,
-    metrics: Optional[Dict[str, Any]] = None,
-    forecast: Optional[Dict[str, Any]] = None,
+    df: pd.DataFrame | None = None,
+    metrics: dict[str, Any] | None = None,
+    forecast: dict[str, Any] | None = None,
 ) -> str:
     """Identifies the empirical temporal reporting period from data points or time-series arrays."""
     if df is not None and not df.empty:
@@ -334,9 +335,9 @@ def extract_reporting_period(
 
 
 def extract_analytical_scope(
-    df: Optional[pd.DataFrame] = None,
-    metrics: Optional[Dict[str, Any]] = None,
-    segments: Optional[Dict[str, Any]] = None,
+    df: pd.DataFrame | None = None,
+    metrics: dict[str, Any] | None = None,
+    segments: dict[str, Any] | None = None,
 ) -> str:
     """Summarizes the scope of dimensions and observations evaluated in the report."""
     parts = []
@@ -359,7 +360,7 @@ def extract_analytical_scope(
     return " | ".join(parts) if parts else "Complete Ingestion & Full Operational Scope"
 
 
-def get_default_assumptions() -> List[str]:
+def get_default_assumptions() -> list[str]:
     """Returns the explicit analytical and statistical assumptions underlying the report."""
     return [
         "Deterministic Grounding: Mathematical aggregations reflect verified ledger sums without synthetic imputation.",
@@ -370,7 +371,7 @@ def get_default_assumptions() -> List[str]:
     ]
 
 
-def get_default_limitations() -> List[str]:
+def get_default_limitations() -> list[str]:
     """Returns the analytical scope boundaries and limitations for executive consumers."""
     return [
         "Exogenous macroeconomic dynamics (inflation, competitor discounting, currency shifts) are outside internal ledger observation.",
@@ -379,7 +380,7 @@ def get_default_limitations() -> List[str]:
     ]
 
 
-def generate_html_report(report_data: Dict[str, Any]) -> str:
+def generate_html_report(report_data: dict[str, Any]) -> str:
     """Renders a self-contained, executive HTML report with responsive styling and print-readiness."""
     import html as html_lib
 
@@ -893,22 +894,22 @@ def generate_html_report(report_data: Dict[str, Any]) -> str:
 
 def generate_executive_report(
     dataset_name: str,
-    dataset_id: Optional[str] = None,
-    version_id: Optional[str] = None,
-    metrics: Optional[Dict[str, Any]] = None,
-    insights: Optional[List[Dict[str, Any]]] = None,
-    forecast: Optional[Dict[str, Any]] = None,
-    anomalies: Optional[List[Dict[str, Any]]] = None,
-    segments: Optional[Dict[str, Any]] = None,
-    custom_title: Optional[str] = None,
-    df: Optional[pd.DataFrame] = None,
-    reporting_period: Optional[str] = None,
-    analytical_scope: Optional[str] = None,
-    important_assumptions: Optional[List[str]] = None,
-    limitations: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    dataset_id: str | None = None,
+    version_id: str | None = None,
+    metrics: dict[str, Any] | None = None,
+    insights: list[dict[str, Any]] | None = None,
+    forecast: dict[str, Any] | None = None,
+    anomalies: list[dict[str, Any]] | None = None,
+    segments: dict[str, Any] | None = None,
+    custom_title: str | None = None,
+    df: pd.DataFrame | None = None,
+    reporting_period: str | None = None,
+    analytical_scope: str | None = None,
+    important_assumptions: list[str] | None = None,
+    limitations: list[str] | None = None,
+) -> dict[str, Any]:
     """Compiles a boardroom-ready executive report with structured sections, complete Markdown, and self-contained HTML."""
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     report_title = custom_title or f"Executive Strategic Briefing: {dataset_name}"
     generated_at_human = now_utc.strftime("%B %d, %Y, %H:%M UTC")
     generated_time_iso = now_utc.isoformat()
@@ -982,7 +983,7 @@ def generate_executive_report(
         f"| **Reporting Period** | **{period}** |",
         f"| **Generated Timestamp** | `{generated_time_iso}` |",
         f"| **Analytical Scope** | {scope} |",
-        f"| **Validation Grounding** | `Strict Deterministic Mathematical Verification (0 LLM Math)` |",
+        "| **Validation Grounding** | `Strict Deterministic Mathematical Verification (0 LLM Math)` |",
         "",
         "---",
         "",

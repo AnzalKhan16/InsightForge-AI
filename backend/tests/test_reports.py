@@ -1,12 +1,13 @@
 import io
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.reports import (
-    generate_prescriptive_recommendations,
-    generate_executive_report,
-    RecommendationPriority,
     RecommendationCategory,
+    RecommendationPriority,
+    generate_executive_report,
+    generate_prescriptive_recommendations,
 )
 
 

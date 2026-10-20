@@ -1,15 +1,17 @@
-import io
-import uuid
-import pandas as pd
 import datetime
-from sqlalchemy import select
-from app.db.session import get_sessionmaker
-from app.db.models.datasets import DatasetVersion, ProcessingJob
-from app.db.models.analytics import SavedAnalysis
-from app.db.enums import JobStatus, DatasetFormat
-from app.core.storage import get_storage
-from app.core.analytics import BusinessAnalyticsEngine
+import io
 import logging
+import uuid
+
+import pandas as pd
+from sqlalchemy import select
+
+from app.core.analytics import BusinessAnalyticsEngine
+from app.core.storage import get_storage
+from app.db.enums import DatasetFormat, JobStatus
+from app.db.models.analytics import SavedAnalysis
+from app.db.models.datasets import DatasetVersion, ProcessingJob
+from app.db.session import get_sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ def analyze_dataset_task(job_id: uuid.UUID):
                 return
                 
             job.status = JobStatus.RUNNING
-            job.started_at = datetime.datetime.now(datetime.timezone.utc)
+            job.started_at = datetime.datetime.now(datetime.UTC)
             session.commit()
             
             try:
@@ -69,7 +71,7 @@ def analyze_dataset_task(job_id: uuid.UUID):
                 
                 job.status = JobStatus.SUCCEEDED
                 job.progress = 100
-                job.finished_at = datetime.datetime.now(datetime.timezone.utc)
+                job.finished_at = datetime.datetime.now(datetime.UTC)
                 job.result = {"analysis_id": str(analysis.id), "summary": "Analysis complete"}
                 session.commit()
                 
@@ -77,8 +79,8 @@ def analyze_dataset_task(job_id: uuid.UUID):
                 logger.exception("Error analyzing dataset")
                 job.status = JobStatus.FAILED
                 job.error_message = str(e)
-                job.finished_at = datetime.datetime.now(datetime.timezone.utc)
+                job.finished_at = datetime.datetime.now(datetime.UTC)
                 session.commit()
                 
-    except Exception as e:
+    except Exception:
         logger.exception("Fatal error in analyze_dataset_task")

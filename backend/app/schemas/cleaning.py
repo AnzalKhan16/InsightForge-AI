@@ -1,5 +1,7 @@
-from typing import Literal, Any
-from pydantic import BaseModel, Field
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
 
 class CleaningOperation(BaseModel):
     op: Literal["drop_duplicates", "drop_na", "fill_na", "trim_whitespace", "convert_type"]

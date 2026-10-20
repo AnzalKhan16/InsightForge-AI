@@ -1,14 +1,15 @@
 import io
+
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
 from app.engine.ml.forecasting import (
+    ForecastModelType,
+    TimeSeriesSuitabilityError,
     detect_temporal_schema,
     generate_forecast,
     prepare_time_series,
-    ForecastModelType,
-    TimeSeriesSuitabilityError,
 )
 
 

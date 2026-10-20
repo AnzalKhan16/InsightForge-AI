@@ -1,17 +1,19 @@
 """Seed script to bootstrap a rich demo environment with realistic transactions, analytics, forecasts, anomalies, segments, and executive reports."""
 import io
-import sys
 import os
-from datetime import datetime, timedelta
 import random
+import sys
+from datetime import datetime, timedelta
 
 # Ensure app is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.db.base import Base
 from app.db.session import get_engine
+from app.main import app
+
 
 def seed():
     print("--- Initializing database tables ---")
@@ -24,7 +26,7 @@ def seed():
     demo_password = "password123"
     
     # Try register
-    reg_resp = client.post("/api/v1/auth/register", json={
+    client.post("/api/v1/auth/register", json={
         "email": demo_email,
         "password": demo_password,
         "full_name": "Executive Demo User"
@@ -111,16 +113,18 @@ def seed():
     print("--- Computing Deterministic Analytics & KPI Visuals ---")
     an_res = client.post(f"/api/v1/workspaces/{workspace_id}/datasets/{dataset_id}/analyze", headers=headers)
     if an_res.status_code == 200 and "job_id" in an_res.json():
-        from app.core.analytics_task import analyze_dataset_task
         import uuid as _uuid
+
+        from app.core.analytics_task import analyze_dataset_task
         analyze_dataset_task(_uuid.UUID(an_res.json()["job_id"]))
 
     # 2. Generate Grounded AI Insights
     print("--- Synthesizing Grounded Strategic Insights ---")
     ins_res = client.post(f"/api/v1/workspaces/{workspace_id}/datasets/{dataset_id}/insights/generate", headers=headers)
     if ins_res.status_code == 200 and "job_id" in ins_res.json():
-        from app.core.insights_task import generate_insights_task
         import uuid as _uuid
+
+        from app.core.insights_task import generate_insights_task
         generate_insights_task(_uuid.UUID(ins_res.json()["job_id"]))
 
     # 3. Generate Forecast
@@ -155,10 +159,10 @@ def seed():
 
     print("\n=======================================================")
     print("SUCCESS: Demo environment seeded!")
-    print(f"Login Credentials:")
+    print("Login Credentials:")
     print(f"  Email:    {demo_email}")
     print(f"  Password: {demo_password}")
-    print(f"Direct Analytics URL:")
+    print("Direct Analytics URL:")
     print(f"  http://localhost:3000/workspaces/{workspace_id}/datasets/{dataset_id}/analytics")
     print("=======================================================\n")
 

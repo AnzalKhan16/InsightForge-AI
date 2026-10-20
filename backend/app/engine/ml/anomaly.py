@@ -17,12 +17,13 @@ Architecture:
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-from app.db.enums import AnomalyStatus, Severity
+from app.db.enums import Severity
 
 
 class AnomalyNature(str, Enum):
@@ -42,7 +43,7 @@ class DetectionMethod(str, Enum):
 class AnomalyFinding:
     column_name: str
     method: DetectionMethod
-    row_index: Optional[int]
+    row_index: int | None
     observed_value: float
     expected_value: float
     score: float  # Normalized anomaly strength [0.0 - 1.0]
@@ -50,9 +51,9 @@ class AnomalyFinding:
     nature: AnomalyNature
     title: str
     explanation: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "column_name": self.column_name,
             "method": self.method.value,
@@ -77,7 +78,7 @@ def detect_zscore_anomalies(
     column: str,
     threshold: float = 2.5,
     max_anomalies: int = 15
-) -> List[AnomalyFinding]:
+) -> list[AnomalyFinding]:
     """Detects statistical outliers using parametric Gaussian Standard Deviation bounds."""
     series = pd.to_numeric(df[column], errors="coerce").dropna()
     if len(series) < 5:
@@ -93,7 +94,7 @@ def detect_zscore_anomalies(
     outliers_mask = (z_scores.abs() > threshold) | (is_non_neg_col & (series < 0))
     outliers_indices = series[outliers_mask].index
 
-    findings: List[AnomalyFinding] = []
+    findings: list[AnomalyFinding] = []
     for idx in outliers_indices:
         val = float(series.loc[idx])
         z = float(z_scores.loc[idx])
@@ -165,7 +166,7 @@ def detect_iqr_anomalies(
     column: str,
     multiplier: float = 1.5,
     max_anomalies: int = 15
-) -> List[AnomalyFinding]:
+) -> list[AnomalyFinding]:
     """Detects distribution-free outliers using Tukey's Interquartile Range Fences."""
     series = pd.to_numeric(df[column], errors="coerce").dropna()
     if len(series) < 5:
@@ -185,7 +186,7 @@ def detect_iqr_anomalies(
     outliers_mask = (series < lower_fence) | (series > upper_fence)
     outliers_indices = series[outliers_mask].index
 
-    findings: List[AnomalyFinding] = []
+    findings: list[AnomalyFinding] = []
     for idx in outliers_indices:
         val = float(series.loc[idx])
         if val > upper_fence:
@@ -247,10 +248,10 @@ def detect_iqr_anomalies(
 
 def detect_isolation_forest_anomalies(
     df: pd.DataFrame,
-    feature_columns: List[str],
+    feature_columns: list[str],
     contamination: float = 0.05,
     max_anomalies: int = 15
-) -> List[AnomalyFinding]:
+) -> list[AnomalyFinding]:
     """Detects multidimensional anomalies using unsupervised decision tree path isolation."""
     valid_cols = [c for c in feature_columns if c in df.columns and pd.api.types.is_numeric_dtype(df[c])]
     if not valid_cols or len(df) < 10:
@@ -274,7 +275,7 @@ def detect_isolation_forest_anomalies(
         anomaly_indices = np.where(preds == -1)[0]
         primary_col = valid_cols[0]
 
-        findings: List[AnomalyFinding] = []
+        findings: list[AnomalyFinding] = []
         for idx in anomaly_indices:
             orig_idx = clean_sub.index[idx]
             raw_score = float(scores[idx])
@@ -327,9 +328,9 @@ def detect_isolation_forest_anomalies(
 
 def run_comprehensive_anomaly_detection(
     df: pd.DataFrame,
-    method: Optional[DetectionMethod] = None,
-    target_column: Optional[str] = None,
-) -> Dict[str, Any]:
+    method: DetectionMethod | None = None,
+    target_column: str | None = None,
+) -> dict[str, Any]:
     """Runs statistical and ML anomaly detection pipelines and generates structured business results."""
     # Find numeric columns
     numeric_cols = [
@@ -347,7 +348,7 @@ def run_comprehensive_anomaly_detection(
 
     target = target_column if (target_column and target_column in numeric_cols) else numeric_cols[0]
 
-    all_findings: List[AnomalyFinding] = []
+    all_findings: list[AnomalyFinding] = []
 
     # 1. Z-Score
     if not method or method == DetectionMethod.ZSCORE:

@@ -1,5 +1,7 @@
 import pandas as pd
+
 from app.core.cleaning import apply_cleaning_operation
+
 
 def test_cleaning_pipeline():
     df = pd.DataFrame({

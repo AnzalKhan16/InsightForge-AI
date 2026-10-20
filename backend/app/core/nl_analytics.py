@@ -14,12 +14,10 @@ Guardrails:
   - Row processing limits and output size clamps.
   - Tenant / workspace isolation enforced at API route boundary.
 """
-import datetime
 import json
 import logging
-import re
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import httpx
 import numpy as np
@@ -42,13 +40,13 @@ class NLQueryOperation(str, Enum):
 
 class NLQueryPlan(BaseModel):
     operation: NLQueryOperation = NLQueryOperation.METRIC_SUMMARY
-    metric_column: Optional[str] = None
-    dimension_column: Optional[str] = None
-    time_column: Optional[str] = None
-    time_filter: Optional[str] = None  # e.g., 'last_month', 'this_quarter', 'previous_quarter'
+    metric_column: str | None = None
+    dimension_column: str | None = None
+    time_column: str | None = None
+    time_filter: str | None = None  # e.g., 'last_month', 'this_quarter', 'previous_quarter'
     limit: int = Field(default=10, ge=1, le=50)
     ascending: bool = False
-    comparison_type: Optional[str] = None  # e.g., 'quarter_over_quarter', 'month_over_month'
+    comparison_type: str | None = None  # e.g., 'quarter_over_quarter', 'month_over_month'
     confidence: float = 1.0
 
 
@@ -57,16 +55,16 @@ class NLQueryResponse(BaseModel):
     operation: NLQueryOperation
     interpreted_intent: str
     answer_markdown: str
-    data: List[Dict[str, Any]] = Field(default_factory=list)
-    columns: List[str] = Field(default_factory=list)
-    chart_suggestion: Optional[Dict[str, Any]] = None
-    summary_metrics: Dict[str, Any] = Field(default_factory=dict)
-    suggested_followups: List[str] = Field(default_factory=list)
+    data: list[dict[str, Any]] = Field(default_factory=list)
+    columns: list[str] = Field(default_factory=list)
+    chart_suggestion: dict[str, Any] | None = None
+    summary_metrics: dict[str, Any] = Field(default_factory=dict)
+    suggested_followups: list[str] = Field(default_factory=list)
     plan: NLQueryPlan
 
 
 # Semantic Aliases for Column Resolution
-COMMON_METRIC_ALIASES: Dict[str, List[str]] = {
+COMMON_METRIC_ALIASES: dict[str, list[str]] = {
     "revenue": ["revenue", "sales", "total_sales", "amount", "total_amount", "price", "total_price", "turnover", "invoiced"],
     "profit": ["profit", "net_profit", "margin", "earnings", "net_margin"],
     "order_count": ["order_id", "order", "orders", "transaction_id", "transaction", "transactions", "count"],
@@ -75,7 +73,7 @@ COMMON_METRIC_ALIASES: Dict[str, List[str]] = {
     "discount": ["discount", "discount_amount"],
 }
 
-COMMON_DIMENSION_ALIASES: Dict[str, List[str]] = {
+COMMON_DIMENSION_ALIASES: dict[str, list[str]] = {
     "product": ["product", "product_name", "item", "item_name", "product_category", "category", "sku", "service"],
     "category": ["category", "product_category", "department", "segment", "type"],
     "customer": ["customer", "customer_name", "customer_id", "client", "buyer", "user", "account", "company"],
@@ -83,12 +81,12 @@ COMMON_DIMENSION_ALIASES: Dict[str, List[str]] = {
     "channel": ["channel", "acquisition_channel", "medium", "source", "platform"],
 }
 
-COMMON_DATE_ALIASES: List[str] = [
+COMMON_DATE_ALIASES: list[str] = [
     "date", "order_date", "created_at", "timestamp", "transaction_date", "invoice_date", "time", "purchase_date"
 ]
 
 
-def resolve_column(query_term: Optional[str], available_columns: List[str], alias_map: Dict[str, List[str]]) -> Optional[str]:
+def resolve_column(query_term: str | None, available_columns: list[str], alias_map: dict[str, list[str]]) -> str | None:
     """Deterministically resolves a natural language term or alias to an actual dataset column."""
     if not available_columns:
         return None
@@ -119,7 +117,7 @@ def resolve_column(query_term: Optional[str], available_columns: List[str], alia
     return None
 
 
-def detect_dataset_schema(df: pd.DataFrame) -> Dict[str, Any]:
+def detect_dataset_schema(df: pd.DataFrame) -> dict[str, Any]:
     """Detects available metric, dimension, and date columns."""
     metric_cols = []
     dimension_cols = []
@@ -170,12 +168,11 @@ def detect_dataset_schema(df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-def parse_query_plan_deterministic(question: str, schema: Dict[str, Any]) -> NLQueryPlan:
+def parse_query_plan_deterministic(question: str, schema: dict[str, Any]) -> NLQueryPlan:
     """Deterministic intent recognition and query planner for standard business queries."""
     q = question.lower()
     metrics = schema.get("metrics") or []
     dimensions = schema.get("dimensions") or []
-    date_cols = schema.get("date_columns") or []
     primary_metric = schema.get("primary_metric")
     primary_date = schema.get("primary_date")
 
@@ -295,7 +292,7 @@ def parse_query_plan_deterministic(question: str, schema: Dict[str, Any]) -> NLQ
     )
 
 
-def parse_query_plan_llm(question: str, schema: Dict[str, Any]) -> NLQueryPlan:
+def parse_query_plan_llm(question: str, schema: dict[str, Any]) -> NLQueryPlan:
     """Uses LLM to understand nuance in question, mapped strictly to validated schema columns."""
     settings = get_settings()
     if not settings.openai_api_key:
@@ -380,7 +377,7 @@ def parse_query_plan_llm(question: str, schema: Dict[str, Any]) -> NLQueryPlan:
         return parse_query_plan_deterministic(question, schema)
 
 
-def execute_deterministic_plan(df: pd.DataFrame, plan: NLQueryPlan, schema: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], List[str], Dict[str, Any], str, Optional[Dict[str, Any]], List[str]]:
+def execute_deterministic_plan(df: pd.DataFrame, plan: NLQueryPlan, schema: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], dict[str, Any], str, dict[str, Any] | None, list[str]]:
     """Executes the validated analytical plan strictly using deterministic operations."""
     working_df = df.copy()
     metric = plan.metric_column or schema.get("primary_metric")
