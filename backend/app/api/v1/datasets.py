@@ -1,6 +1,6 @@
 import uuid
 import hashlib
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from app.api.deps import ActiveUser, SessionDep
 from app.db.repositories.core import WorkspaceRepository
@@ -731,3 +731,185 @@ def update_anomaly_status(
 
     session.commit()
     return {"id": str(anomaly.id), "status": anomaly.status.value}
+
+
+class SegmentationRequest(BaseModel):
+    method: Optional[str] = "auto"
+    entity_column: Optional[str] = None
+    date_column: Optional[str] = None
+    monetary_column: Optional[str] = None
+    feature_columns: Optional[List[str]] = None
+    k: Optional[int] = None
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/segmentation/schema")
+def get_segmentation_schema_endpoint(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    from app.engine.ml.segmentation import detect_segmentation_schema
+    return detect_segmentation_schema(df)
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/segmentation")
+def run_segmentation_endpoint(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    payload: SegmentationRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    from app.engine.ml.segmentation import run_segmentation, SegmentationSuitabilityError
+    try:
+        res = run_segmentation(
+            df=df,
+            method=payload.method or "auto",
+            entity_col=payload.entity_column,
+            date_col=payload.date_column,
+            monetary_col=payload.monetary_column,
+            feature_cols=payload.feature_columns,
+            k=payload.k,
+        )
+    except SegmentationSuitabilityError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Segmentation failed: {str(e)}")
+
+    from app.db.models.analytics import Segment
+    run_id = uuid.uuid4()
+    for s in res.get("segments", []):
+        record = Segment(
+            workspace_id=workspace_id,
+            version_id=latest_version.id,
+            run_id=run_id,
+            method=res["method"],
+            label=s["label"],
+            member_count=s["member_count"],
+            profile=s.get("profile"),
+            params={
+                "subtitle": s.get("subtitle"),
+                "percentage_of_members": s.get("percentage_of_members"),
+                "total_monetary": s.get("total_monetary"),
+                "percentage_of_monetary": s.get("percentage_of_monetary"),
+                "recommendation": s.get("recommendation"),
+                "sample_members": s.get("sample_members"),
+            }
+        )
+        session.add(record)
+
+    session.commit()
+
+    return {
+        "run_id": str(run_id),
+        **res,
+    }
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/segments")
+def list_dataset_segments(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Segment
+    from app.db.models.datasets import DatasetVersion
+    from sqlalchemy import select
+
+    # Find the most recent run_id for this dataset
+    latest_run_stmt = (
+        select(Segment.run_id)
+        .join(DatasetVersion, Segment.version_id == DatasetVersion.id)
+        .where(
+            Segment.workspace_id == workspace_id,
+            DatasetVersion.dataset_id == dataset_id
+        )
+        .order_by(Segment.created_at.desc())
+        .limit(1)
+    )
+    latest_run_id = session.execute(latest_run_stmt).scalar_one_or_none()
+    if not latest_run_id:
+        return {"run_id": None, "segments": []}
+
+    stmt = (
+        select(Segment)
+        .where(
+            Segment.workspace_id == workspace_id,
+            Segment.run_id == latest_run_id
+        )
+        .order_by(Segment.member_count.desc())
+    )
+    records = session.execute(stmt).scalars().all()
+
+    segments_out = []
+    for r in records:
+        params = r.params or {}
+        segments_out.append({
+            "id": str(r.id),
+            "label": r.label,
+            "subtitle": params.get("subtitle", ""),
+            "member_count": r.member_count,
+            "percentage_of_members": params.get("percentage_of_members", 0.0),
+            "total_monetary": params.get("total_monetary", 0.0),
+            "percentage_of_monetary": params.get("percentage_of_monetary", 0.0),
+            "profile": r.profile,
+            "recommendation": params.get("recommendation", ""),
+            "sample_members": params.get("sample_members", []),
+            "created_at": r.created_at,
+        })
+
+    method = records[0].method if records else "unknown"
+
+    return {
+        "run_id": str(latest_run_id),
+        "method": method,
+        "segments": segments_out,
+    }
+

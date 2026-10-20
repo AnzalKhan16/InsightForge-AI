@@ -35,6 +35,48 @@ interface AnomalyItem {
   created_at?: string;
 }
 
+interface SegmentItem {
+  id?: string;
+  label: string;
+  subtitle: string;
+  member_count: number;
+  percentage_of_members: number;
+  total_monetary: number;
+  percentage_of_monetary: number;
+  profile?: Record<string, any>;
+  recommendation?: string;
+  sample_members?: Array<Record<string, any>>;
+  created_at?: string;
+}
+
+interface SegmentationResult {
+  run_id?: string;
+  method: string;
+  total_entities?: number;
+  total_monetary?: number;
+  k?: number;
+  silhouette_score?: number;
+  segments: SegmentItem[];
+  assumptions?: string[];
+  limitations?: string[];
+}
+
+interface SegmentationSchema {
+  entity_columns: string[];
+  customer_columns: string[];
+  product_columns: string[];
+  date_columns: string[];
+  monetary_columns: string[];
+  numeric_columns: string[];
+  rfm_supported: boolean;
+  abc_supported: boolean;
+  kmeans_supported: boolean;
+  suggested_method: string;
+  suggested_entity_column: string | null;
+  suggested_date_column: string | null;
+  suggested_monetary_column: string | null;
+}
+
 interface ForecastResult {
   id?: string;
   target_column: string;
@@ -150,12 +192,53 @@ export default function AnalyticsPage() {
   const [anomalyNatureFilter, setAnomalyNatureFilter] = useState<string>('all');
   const [anomalyStatusFilter, setAnomalyStatusFilter] = useState<string>('all');
 
+  // Segmentation state
+  const [segSchema, setSegSchema] = useState<SegmentationSchema | null>(null);
+  const [selectedSegMethod, setSelectedSegMethod] = useState<string>('auto');
+  const [selectedSegEntity, setSelectedSegEntity] = useState<string>('');
+  const [selectedSegMonetary, setSelectedSegMonetary] = useState<string>('');
+  const [selectedSegDate, setSelectedSegDate] = useState<string>('');
+  const [selectedKmeansK, setSelectedKmeansK] = useState<number>(3);
+  const [segmentationResult, setSegmentationResult] = useState<SegmentationResult | null>(null);
+  const [runningSegmentation, setRunningSegmentation] = useState<boolean>(false);
+  const [segmentationError, setSegmentationError] = useState<string | null>(null);
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(0);
+
   // Tabs & filters
-  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'anomalies' | 'charts' | 'all'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'anomalies' | 'segments' | 'charts' | 'all'>('insights');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
+
+  const runSegmentation = async () => {
+    setRunningSegmentation(true);
+    setSegmentationError(null);
+    try {
+      const payload: Record<string, any> = {
+        method: selectedSegMethod,
+      };
+      if (selectedSegEntity) payload.entity_column = selectedSegEntity;
+      if (selectedSegMonetary) payload.monetary_column = selectedSegMonetary;
+      if (selectedSegDate) payload.date_column = selectedSegDate;
+      if (selectedSegMethod === 'kmeans') payload.k = Number(selectedKmeansK);
+
+      const res = await apiFetch<SegmentationResult>(`/workspaces/${workspaceId}/datasets/${datasetId}/segmentation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+      setSegmentationResult(res);
+      setActiveSegmentIndex(0);
+    } catch (err: any) {
+      setSegmentationError(err.message || 'Failed to generate segmentation');
+    } finally {
+      setRunningSegmentation(false);
+    }
+  };
 
   const runAnomalyDetection = async () => {
     setRunningAnomalyDetect(true);
@@ -278,7 +361,7 @@ export default function AnalyticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ds, an, ins, fcSchema, fcs, anoms] = await Promise.all([
+      const [ds, an, ins, fcSchema, fcs, anoms, sSchema, sResult] = await Promise.all([
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -297,6 +380,12 @@ export default function AnalyticsPage() {
         apiFetch<AnomalyItem[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/anomalies`, {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => []),
+        apiFetch<SegmentationSchema>(`/workspaces/${workspaceId}/datasets/${datasetId}/segmentation/schema`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+        apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/segments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
       ]);
       setDataset(ds);
       setAnalyses(an);
@@ -315,6 +404,21 @@ export default function AnalyticsPage() {
       }
       if (anoms && Array.isArray(anoms)) {
         setAnomalies(anoms);
+      }
+      if (sSchema) {
+        setSegSchema(sSchema);
+        if (sSchema.suggested_entity_column && !selectedSegEntity) {
+          setSelectedSegEntity(sSchema.suggested_entity_column);
+        }
+        if (sSchema.suggested_monetary_column && !selectedSegMonetary) {
+          setSelectedSegMonetary(sSchema.suggested_monetary_column);
+        }
+        if (sSchema.suggested_date_column && !selectedSegDate) {
+          setSelectedSegDate(sSchema.suggested_date_column);
+        }
+      }
+      if (sResult && sResult.segments && sResult.segments.length > 0) {
+        setSegmentationResult(sResult);
       }
     } catch (err: any) {
       console.error("Failed to fetch analytics or insights", err);
@@ -546,6 +650,23 @@ export default function AnalyticsPage() {
             {anomalies.length > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'anomalies' ? 'bg-indigo-500 text-white' : 'bg-rose-100 text-rose-700 font-bold'}`}>
                 {anomalies.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('segments')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'segments' 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Segmentation (RFM / K-Means / ABC)
+            {segmentationResult?.segments && segmentationResult.segments.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'segments' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700 font-bold'}`}>
+                {segmentationResult.segments.length}
               </span>
             )}
           </button>
@@ -1613,6 +1734,443 @@ export default function AnalyticsPage() {
                 </p>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* SECTION 1.95: CUSTOMER & PRODUCT SEGMENTATION */}
+        {(activeTab === 'segments' || activeTab === 'all') && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  Customer & Product Segmentation Suite
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Behavioral RFM quintiles, multidimensional K-Means with Silhouette validation, and Pareto ABC inventory analysis.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Deterministic Behavioral & Statistical Clustering</span>
+              </div>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Methodology
+                  </label>
+                  <select
+                    value={selectedSegMethod}
+                    onChange={(e) => setSelectedSegMethod(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    <option value="auto">Auto (Smart Schema Detect)</option>
+                    <option value="rfm">RFM Customer Segmentation</option>
+                    <option value="kmeans">K-Means Multi-Feature Clustering</option>
+                    <option value="abc_pareto">ABC / Pareto Product Analysis</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Entity Identifier
+                  </label>
+                  <select
+                    value={selectedSegEntity}
+                    onChange={(e) => setSelectedSegEntity(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    {segSchema?.entity_columns?.map((col: string) => (
+                      <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
+                    )) || (
+                      <option value="customer_name">CUSTOMER NAME</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Monetary / Spend Metric
+                  </label>
+                  <select
+                    value={selectedSegMonetary}
+                    onChange={(e) => setSelectedSegMonetary(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    {segSchema?.monetary_columns?.map((col: string) => (
+                      <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
+                    )) || (
+                      <option value="revenue">REVENUE</option>
+                    )}
+                  </select>
+                </div>
+
+                {selectedSegMethod === 'rfm' || selectedSegMethod === 'auto' ? (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Date Column (Recency)
+                    </label>
+                    <select
+                      value={selectedSegDate}
+                      onChange={(e) => setSelectedSegDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    >
+                      {segSchema?.date_columns?.map((col: string) => (
+                        <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
+                      )) || (
+                        <option value="order_date">ORDER DATE</option>
+                      )}
+                    </select>
+                  </div>
+                ) : selectedSegMethod === 'kmeans' ? (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Clusters (k)
+                    </label>
+                    <select
+                      value={selectedKmeansK}
+                      onChange={(e) => setSelectedKmeansK(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    >
+                      <option value={2}>2 Clusters</option>
+                      <option value={3}>3 Clusters</option>
+                      <option value={4}>4 Clusters</option>
+                      <option value={5}>5 Clusters</option>
+                      <option value={6}>6 Clusters</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Pareto Cutoffs
+                    </label>
+                    <div className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-600 font-medium">
+                      80% / 15% / 5%
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <button
+                    onClick={runSegmentation}
+                    disabled={runningSegmentation}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${runningSegmentation ? 'animate-spin' : ''}`} />
+                    <span>{runningSegmentation ? 'Clustering Data...' : 'Generate Segments'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {segmentationError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{segmentationError}</span>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!segmentationResult && !runningSegmentation && (
+              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                  <Users className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">Customer & Product Segmentation Ready</h3>
+                <p className="text-slate-500 max-w-md text-xs mb-6">
+                  Select your model above to classify accounts into behavioral RFM tiers, multi-feature K-Means clusters, or ABC Pareto catalog classes.
+                </p>
+                <button
+                  onClick={runSegmentation}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                >
+                  Run Segmentation Now
+                </button>
+              </div>
+            )}
+
+            {/* Results Display */}
+            {segmentationResult && segmentationResult.segments && segmentationResult.segments.length > 0 && (
+              <div className="space-y-6">
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Entities</div>
+                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                      {segmentationResult.total_entities?.toLocaleString() || segmentationResult.segments.reduce((acc, s) => acc + s.member_count, 0)}
+                    </div>
+                    <div className="text-xs text-indigo-600 font-medium mt-1">
+                      Method: {segmentationResult.method.toUpperCase()}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Gross Monitored Value</div>
+                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                      ${(segmentationResult.total_monetary || segmentationResult.segments.reduce((acc, s) => acc + s.total_monetary, 0)).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Cumulative spend across segments</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Top Tier Dominance</div>
+                    <div className="text-2xl font-extrabold text-emerald-700 mt-1">
+                      {segmentationResult.segments[0]?.percentage_of_monetary}%
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {segmentationResult.segments[0]?.label} revenue share
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {segmentationResult.silhouette_score != null ? 'Silhouette Validation' : 'Active Segments'}
+                    </div>
+                    <div className="text-2xl font-extrabold text-indigo-900 mt-1">
+                      {segmentationResult.silhouette_score != null 
+                        ? segmentationResult.silhouette_score 
+                        : `${segmentationResult.segments.length} Tiers`}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {segmentationResult.silhouette_score != null ? 'Cluster separation score [-1, 1]' : 'Distinct business classifications'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Master-Detail Segment Explorer */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left: Segments List */}
+                  <div className="lg:col-span-5 space-y-3">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Identified Segments ({segmentationResult.segments.length})
+                    </div>
+                    {segmentationResult.segments.map((seg, idx) => {
+                      const isSelected = activeSegmentIndex === idx;
+                      return (
+                        <div
+                          key={seg.label + idx}
+                          onClick={() => setActiveSegmentIndex(idx)}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'bg-indigo-50/60 border-indigo-400 shadow-sm ring-1 ring-indigo-300' 
+                              : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-slate-900">{seg.label}</h4>
+                            <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                              {seg.percentage_of_monetary}% Rev
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{seg.subtitle}</p>
+
+                          {/* Dual metric progress bar: Member share vs Revenue share */}
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>Revenue Contribution (${seg.total_monetary.toLocaleString()})</span>
+                              <span className="font-semibold">{seg.percentage_of_monetary}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-indigo-600 h-1.5 rounded-full"
+                                style={{ width: `${Math.min(100, seg.percentage_of_monetary)}%` }}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-slate-500">
+                              <span>Customer Share ({seg.member_count} members)</span>
+                              <span>{seg.percentage_of_members}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-slate-400 h-1.5 rounded-full"
+                                style={{ width: `${Math.min(100, seg.percentage_of_members)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right: Active Segment Deep Dive */}
+                  <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    {segmentationResult.segments[activeSegmentIndex] && (() => {
+                      const activeSeg = segmentationResult.segments[activeSegmentIndex];
+                      return (
+                        <>
+                          <div className="border-b border-slate-100 pb-4">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md">
+                                Segment Details
+                              </span>
+                              <span className="text-xs text-slate-400">•</span>
+                              <span className="text-xs text-slate-500">
+                                {activeSeg.member_count} Members ({activeSeg.percentage_of_members}% of total)
+                              </span>
+                            </div>
+                            <h3 className="text-xl font-extrabold text-slate-900">{activeSeg.label}</h3>
+                            <p className="text-sm text-slate-600 mt-1">{activeSeg.subtitle}</p>
+                          </div>
+
+                          {/* Profile Statistics Grid */}
+                          {activeSeg.profile && (() => {
+                            const prof = activeSeg.profile;
+                            return (
+                              <div>
+                                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                                  Behavioral Centroid Profile
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  {prof.avg_recency_days != null && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <div className="text-[11px] text-slate-500 font-medium">Avg Recency</div>
+                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                        {prof.avg_recency_days} days
+                                      </div>
+                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                        R-Score: {prof.avg_r_score} / 5
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {prof.avg_frequency != null && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <div className="text-[11px] text-slate-500 font-medium">Avg Orders</div>
+                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                        {prof.avg_frequency} txns
+                                      </div>
+                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                        F-Score: {prof.avg_f_score} / 5
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {prof.avg_monetary != null && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <div className="text-[11px] text-slate-500 font-medium">Avg Spend</div>
+                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                        ${prof.avg_monetary.toLocaleString()}
+                                      </div>
+                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                        M-Score: {prof.avg_m_score} / 5
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {prof.centroids && Object.entries(prof.centroids).map(([feat, val]) => (
+                                    <div key={feat} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <div className="text-[11px] text-slate-500 font-medium capitalize">{feat.replace('_', ' ')}</div>
+                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                        {Number(val).toLocaleString()}
+                                      </div>
+                                      {prof.global_averages && prof.global_averages[feat] != null && (
+                                        <div className="text-[10px] text-slate-400 mt-0.5">
+                                          Global: {prof.global_averages[feat]}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Actionable Strategy Playbook */}
+                          {activeSeg.recommendation && (
+                            <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                                Actionable Business Playbook
+                              </h4>
+                              <p className="text-xs text-indigo-950 leading-relaxed font-medium">
+                                {activeSeg.recommendation}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Sample Members Table */}
+                          {activeSeg.sample_members && activeSeg.sample_members.length > 0 && (
+                            <div>
+                              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                Representative Segment Members
+                              </div>
+                              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                                  <thead className="bg-slate-50 text-slate-600 font-semibold">
+                                    <tr>
+                                      <th className="px-3 py-2">Entity</th>
+                                      {activeSeg.sample_members[0].monetary != null && <th className="px-3 py-2">Monetary</th>}
+                                      {activeSeg.sample_members[0].revenue != null && <th className="px-3 py-2">Revenue</th>}
+                                      {activeSeg.sample_members[0].frequency != null && <th className="px-3 py-2">Orders</th>}
+                                      {activeSeg.sample_members[0].recency_days != null && <th className="px-3 py-2">Recency</th>}
+                                      {activeSeg.sample_members[0].r_score != null && <th className="px-3 py-2">R / F / M</th>}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {activeSeg.sample_members.map((m, mIdx) => (
+                                      <tr key={mIdx} className="hover:bg-slate-50/50">
+                                        <td className="px-3 py-2 font-bold text-slate-900">{m.entity || m.product || `Entity #${mIdx + 1}`}</td>
+                                        {m.monetary != null && <td className="px-3 py-2 font-semibold text-indigo-600">${m.monetary.toLocaleString()}</td>}
+                                        {m.revenue != null && <td className="px-3 py-2 font-semibold text-indigo-600">${m.revenue.toLocaleString()}</td>}
+                                        {m.frequency != null && <td className="px-3 py-2">{m.frequency}</td>}
+                                        {m.recency_days != null && <td className="px-3 py-2">{m.recency_days}d ago</td>}
+                                        {m.r_score != null && (
+                                          <td className="px-3 py-2 font-mono text-slate-500">
+                                            {m.r_score}-{m.f_score}-{m.m_score}
+                                          </td>
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Methodology Reference Box */}
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                      RFM Behavioral Quantiles
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Scores Recency, Frequency, and Monetary parameters on standardized 1-5 rank percentiles to build actionable customer lifecycle cohorts.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <Activity className="w-4 h-4 text-indigo-600" />
+                      K-Means with Silhouette Validation
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Evaluates multi-feature clusters using standardized Euclidean distance. Automatically discovers optimal separation without arbitrary guessing.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      ABC Pareto Catalog Distribution
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Decomposes inventory revenue into Class A core drivers (top 80%), Class B steady contributors (15%), and Class C long-tail SKUs (5%).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
