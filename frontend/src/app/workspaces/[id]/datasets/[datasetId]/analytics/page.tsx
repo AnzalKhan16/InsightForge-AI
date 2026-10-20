@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, Area, AreaChart, ComposedChart 
@@ -799,7 +800,9 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10 text-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+      <Navbar workspaceId={workspaceId} datasetId={datasetId} />
+      <div className="flex-1 p-6 md:p-10">
       {/* Header */}
       <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
         <div>
@@ -3054,11 +3057,16 @@ export default function AnalyticsPage() {
                         <p className="text-xs text-slate-500">Chronological volume aggregated across reporting dates</p>
                       </div>
                     </div>
-                    
-                    {ts && ts.length > 0 ? (
-                      <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={ts} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                        {ts && ts.length > 0 ? (
+                      <div className="h-[350px] w-full pt-2">
+                        <ResponsiveContainer width="100%" height={340} minWidth={100} minHeight={340}>
+                          <AreaChart data={ts} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                            <defs>
+                              <linearGradient id="analyticsRevGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.0} />
+                              </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis 
                               dataKey="date" 
@@ -3071,21 +3079,21 @@ export default function AnalyticsPage() {
                               axisLine={false}
                               tickLine={false}
                               tick={{ fill: '#64748b', fontSize: 12 }}
-                              tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
+                              tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
                             />
                             <Tooltip 
                               contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value: any) => [Number(value).toLocaleString(), 'Metric Value']}
+                              formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue Volume']}
                             />
-                            <Line 
+                            <Area 
                               type="monotone" 
                               dataKey="value" 
                               stroke="#4f46e5" 
-                              strokeWidth={3}
-                              dot={{ r: 4, strokeWidth: 2, fill: '#4f46e5' }}
-                              activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }}
+                              strokeWidth={3} 
+                              fillOpacity={1}
+                              fill="url(#analyticsRevGrad)"
                             />
-                          </LineChart>
+                          </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
@@ -3116,8 +3124,8 @@ export default function AnalyticsPage() {
                     </div>
                     
                     {activeDimension && breakdowns[activeDimension] ? (
-                      <div className="flex-1 h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                      <div className="flex-1 h-[350px] w-full pt-2">
+                        <ResponsiveContainer width="100%" height={340} minWidth={100} minHeight={340}>
                           <BarChart 
                             data={breakdowns[activeDimension]} 
                             layout="vertical"
@@ -3157,6 +3165,7 @@ export default function AnalyticsPage() {
             )}
           </section>
         )}
+        </div>
       </div>
     </div>
   );

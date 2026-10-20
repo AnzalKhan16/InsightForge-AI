@@ -4,6 +4,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import { 
+  TrendingUp, BarChart3, Database, Sparkles, Trash2, RefreshCw, 
+  FileSpreadsheet, Layers, ArrowRight, CheckCircle2, Clock, 
+  AlertCircle, Upload, ArrowLeft, ShieldCheck, Sparkle
+} from 'lucide-react';
 
 export default function WorkspacePage() {
   const { token, user } = useAuthStore();
@@ -14,9 +20,11 @@ export default function WorkspacePage() {
   const [datasets, setDatasets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchDatasets = async () => {
+  const fetchDatasets = async (showLoading = false) => {
+    if (showLoading) setIsRefreshing(true);
     try {
       const res = await apiFetch<any[]>(`/workspaces/${workspaceId}/datasets`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -24,6 +32,8 @@ export default function WorkspacePage() {
       setDatasets(res);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch datasets');
+    } finally {
+      if (showLoading) setIsRefreshing(false);
     }
   };
 
@@ -46,7 +56,7 @@ export default function WorkspacePage() {
         }
         return prevDatasets;
       });
-    }, 3000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [token, workspaceId]);
@@ -60,7 +70,7 @@ export default function WorkspacePage() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('name', file.name.split('.')[0]); // Use filename as default dataset name
+    formData.append('name', file.name.split('.')[0]);
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/datasets`, {
@@ -86,7 +96,7 @@ export default function WorkspacePage() {
   };
 
   const handleDelete = async (datasetId: string) => {
-    if (!confirm('Are you sure you want to delete this dataset?')) return;
+    if (!confirm('Are you sure you want to delete this dataset? All associated analytics, forecasts, and reports will be removed.')) return;
     try {
       await apiFetch(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
         method: 'DELETE',
@@ -101,90 +111,224 @@ export default function WorkspacePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 text-black">
-      <header className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Workspace Datasets</h1>
-        <button onClick={() => router.push('/dashboard')} className="text-blue-600 hover:underline">
-          Back to Dashboard
-        </button>
-      </header>
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+      <Navbar workspaceId={workspaceId} />
 
-      {error && <div className="bg-red-100 text-red-700 p-4 mb-6 rounded shadow">{error}</div>}
-
-      <div className="bg-white p-6 rounded shadow mb-8">
-        <h2 className="text-xl font-semibold mb-4">Upload New Dataset</h2>
-        <div className="flex items-center gap-4">
-          <input 
-            type="file" 
-            accept=".csv,.xlsx,.xls"
-            onChange={handleUpload}
-            disabled={uploading}
-            ref={fileInputRef}
-            className="border p-2 rounded w-full max-w-md"
-          />
-          {uploading && <span className="text-blue-600 animate-pulse">Uploading...</span>}
+      {/* Sub-bar with Breadcrumb & Refresh */}
+      <div className="border-b border-slate-800 bg-slate-950/50 px-6 py-3 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-slate-400">
+          <button onClick={() => router.push('/')} className="hover:text-indigo-400 transition-colors flex items-center gap-1 font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" /> Dashboard Hub
+          </button>
+          <span>/</span>
+          <span className="text-slate-200 font-semibold">Workspace Datasets</span>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Supported formats: CSV, Excel (Max 50MB)</p>
+
+        <button
+          onClick={() => fetchDatasets(true)}
+          disabled={isRefreshing}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/80"
+          title="Refresh datasets status"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
+          Refresh
+        </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {datasets.map((dataset) => (
-          <div key={dataset.id} className="bg-white p-6 rounded shadow border-l-4 border-blue-500">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-xl font-bold truncate pr-2" title={dataset.name}>{dataset.name}</h3>
-              <button 
-                onClick={() => handleDelete(dataset.id)} 
-                className="text-red-500 hover:text-red-700 text-sm"
-              >
-                Delete
-              </button>
-            </div>
-            {dataset.versions && dataset.versions.length > 0 ? (
-              <div className="text-sm text-gray-600 mt-4">
-                {(() => {
-                  const currentVer = dataset.versions[dataset.versions.length - 1];
-                  const isProcessing = currentVer.status === 'processing' || currentVer.status === 'uploaded';
-                  return (
-                    <>
-                      <p><span className="font-semibold">Current Version:</span> v{currentVer.version_number}</p>
-                      <p><span className="font-semibold">Format:</span> {currentVer.format.toUpperCase()}</p>
-                      <p><span className="font-semibold">Size:</span> {(currentVer.size_bytes / 1024).toFixed(1)} KB</p>
-                      <p className="flex items-center gap-2 mt-1"><span className="font-semibold">Status:</span> 
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${currentVer.status === 'completed' ? 'bg-green-100 text-green-800' : currentVer.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {currentVer.status.toUpperCase()}
-                        </span>
-                      </p>
-                      {currentVer.dataset_metadata && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p><span className="font-semibold">Rows:</span> {currentVer.dataset_metadata.row_count}</p>
-                          <p><span className="font-semibold">Columns:</span> {currentVer.dataset_metadata.column_count}</p>
-                        </div>
-                      )}
-                      
-                      <div className="mt-4 flex gap-2">
-                         <button 
-                           onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}`)}
-                           className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm font-semibold hover:bg-blue-100 transition-colors"
-                           disabled={currentVer.status !== 'completed'}
-                         >
-                           {currentVer.status === 'completed' ? 'View Profile' : 'Processing...'}
-                         </button>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No versions found.</p>
-            )}
-          </div>
-        ))}
-        {datasets.length === 0 && !uploading && (
-          <div className="col-span-full text-center p-12 bg-white rounded shadow text-gray-500">
-            No datasets uploaded yet. Upload a CSV or Excel file to get started.
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
+        {error && (
+          <div className="bg-rose-950/60 border border-rose-800/80 text-rose-200 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm">
+            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
-      </div>
+
+        {/* Upload Zone Card */}
+        <section className="bg-slate-800/60 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-xl backdrop-blur-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                Ingest & Process
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white">Upload New Business Dataset</h2>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Import sales ledgers, customer transactions, or inventory logs. The engine deterministically profiles columns, computes distributions, and powers the interactive analytics suite.
+              </p>
+            </div>
+
+            <div className="w-full md:w-auto flex-shrink-0">
+              <div className="flex flex-col items-center gap-2">
+                <label className={`cursor-pointer w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all ${
+                  uploading 
+                    ? 'bg-slate-700 cursor-not-allowed opacity-80' 
+                    : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 hover:shadow-indigo-500/25 shadow-indigo-600/20 active:scale-98'
+                }`}>
+                  <Upload className="w-4 h-4" />
+                  {uploading ? 'Ingesting File...' : 'Select CSV or Excel File'}
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleUpload}
+                    disabled={uploading}
+                    ref={fileInputRef}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  Supported formats: CSV, XLSX, XLS (Max 50MB)
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Datasets Section */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Database className="w-4 h-4 text-indigo-400" />
+                Available Datasets ({datasets.length})
+              </h3>
+              <p className="text-xs text-slate-400">
+                Select any dataset to launch the interactive dashboard, view profiles, or run ML forecasting.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {datasets.map((dataset) => {
+              const currentVer = dataset.versions?.[dataset.versions.length - 1];
+              const isCompleted = currentVer?.status === 'completed';
+              const isProcessing = currentVer?.status === 'uploaded' || currentVer?.status === 'processing';
+              const isFailed = currentVer?.status === 'failed';
+              const meta = currentVer?.dataset_metadata;
+
+              return (
+                <div 
+                  key={dataset.id} 
+                  className="bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between transition-all hover:border-slate-600 hover:shadow-2xl"
+                >
+                  <div className="space-y-4">
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700">
+                            v{currentVer?.version_number || 1}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            {currentVer?.format?.toUpperCase() || 'CSV'}
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-bold text-white truncate" title={dataset.name}>
+                          {dataset.name}
+                        </h4>
+                      </div>
+
+                      <button
+                        onClick={() => handleDelete(dataset.id)}
+                        className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-700/60 transition-colors"
+                        title="Delete dataset"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Metadata & Status Badges */}
+                    <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Processing Status</span>
+                        {isCompleted && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" /> Ready
+                          </span>
+                        )}
+                        {isProcessing && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                            <Clock className="w-3 h-3" /> Processing...
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <AlertCircle className="w-3 h-3" /> Failed
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-center">
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase">Rows</div>
+                          <div className="font-bold text-slate-200 mt-0.5">{meta?.row_count ? meta.row_count.toLocaleString() : '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase">Columns</div>
+                          <div className="font-bold text-slate-200 mt-0.5">{meta?.column_count || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase">File Size</div>
+                          <div className="font-bold text-slate-200 mt-0.5">{currentVer?.size_bytes ? `${(currentVer.size_bytes / 1024).toFixed(1)} KB` : '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-6 space-y-2">
+                    {/* PRIMARY ACTION: DIRECT TO INTERACTIVE ANALYTICS DASHBOARD */}
+                    <button
+                      onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}/analytics`)}
+                      disabled={!isCompleted}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-xs font-bold transition-all shadow-md ${
+                        isCompleted
+                          ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-indigo-600/30 active:scale-98 cursor-pointer'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-60'
+                      }`}
+                    >
+                      <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      Open Interactive Dashboard
+                      <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-300" />
+                    </button>
+
+                    {/* Secondary Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}`)}
+                        disabled={!isCompleted}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Layers className="w-3 h-3 text-indigo-400" />
+                        Data Profile
+                      </button>
+
+                      <button
+                        onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}/clean`)}
+                        disabled={!isCompleted}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ShieldCheck className="w-3 h-3 text-purple-400" />
+                        Clean Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {datasets.length === 0 && !uploading && (
+              <div className="col-span-full bg-slate-800/40 border border-slate-700/60 rounded-3xl p-12 text-center flex flex-col items-center justify-center">
+                <Database className="w-12 h-12 text-slate-600 mb-3" />
+                <h4 className="text-base font-bold text-slate-300 mb-1">No Datasets Uploaded Yet</h4>
+                <p className="text-xs text-slate-500 max-w-sm mb-4">
+                  Upload a CSV or Excel transaction file above to automatically generate KPIs, charts, forecasts, and AI insights.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

@@ -86,6 +86,8 @@ async def upload_dataset(
         checksum=checksum
     )
     
+    session.commit()
+
     # Enqueue profiling
     from app.core.profiling import profile_dataset_task
     background_tasks.add_task(
