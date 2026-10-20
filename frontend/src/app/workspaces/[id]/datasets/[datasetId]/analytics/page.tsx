@@ -6,16 +6,45 @@ import { apiFetch } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell 
+  BarChart, Bar, Cell, Area, AreaChart, ComposedChart 
 } from 'recharts';
 import { 
   ArrowUpRight, TrendingUp, Users, DollarSign, ShoppingCart, Activity, RefreshCw,
   Sparkles, ShieldCheck, AlertTriangle, AlertOctagon, Info, ChevronDown, ChevronUp,
   Layers, Filter, Database, CheckCircle2, MessageSquare, Send, CornerDownRight,
-  HelpCircle, BarChart3, Search
+  HelpCircle, BarChart3, Search, Calendar, Gauge
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+
+interface ForecastResult {
+  id?: string;
+  target_column: string;
+  time_column: string;
+  frequency: string;
+  horizon: number;
+  selected_model: string;
+  model_parameters: Record<string, any>;
+  validation_metrics: {
+    mae: number;
+    rmse: number;
+    mape_pct: number;
+    holdout_periods: number;
+  };
+  all_model_evaluations: Record<string, any>;
+  historical_points: Array<{ date: string; value: number }>;
+  forecast_points: Array<{
+    date: string;
+    period_index: number;
+    forecast: number;
+    lower_bound_80: number;
+    upper_bound_80: number;
+    lower_bound_95: number;
+    upper_bound_95: number;
+  }>;
+  assumptions: string[];
+  limitations: string[];
+}
 
 interface NLQueryResult {
   question: string;
@@ -85,8 +114,17 @@ export default function AnalyticsPage() {
   const [nlResult, setNlResult] = useState<NLQueryResult | null>(null);
   const [nlError, setNlError] = useState<string | null>(null);
 
+  // Forecasting state
+  const [forecastSchema, setForecastSchema] = useState<any>(null);
+  const [selectedForecastMetric, setSelectedForecastMetric] = useState<string>('');
+  const [forecastHorizon, setForecastHorizon] = useState<number>(6);
+  const [selectedForecastModel, setSelectedForecastModel] = useState<string>('auto');
+  const [forecastResult, setForecastResult] = useState<ForecastResult | null>(null);
+  const [loadingForecast, setLoadingForecast] = useState<boolean>(false);
+  const [forecastError, setForecastError] = useState<string | null>(null);
+
   // Tabs & filters
-  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'charts' | 'all'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'charts' | 'all'>('insights');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -115,10 +153,35 @@ export default function AnalyticsPage() {
     }
   };
 
+  const runForecast = async () => {
+    setLoadingForecast(true);
+    setForecastError(null);
+    try {
+      const target = selectedForecastMetric || forecastSchema?.primary_metric;
+      const res = await apiFetch<ForecastResult>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          target_column: target,
+          horizon: Number(forecastHorizon),
+          model_type: selectedForecastModel,
+        }),
+      });
+      setForecastResult(res);
+    } catch (err: any) {
+      setForecastError(err.message || 'Failed to generate forecast');
+    } finally {
+      setLoadingForecast(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ds, an, ins] = await Promise.all([
+      const [ds, an, ins, fcSchema, fcs] = await Promise.all([
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -127,17 +190,67 @@ export default function AnalyticsPage() {
         }),
         apiFetch<InsightItem[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/insights`, {
           headers: { Authorization: `Bearer ${token}` },
-        })
+        }),
+        apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecast/schema`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+        apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecasts`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => []),
       ]);
       setDataset(ds);
       setAnalyses(an);
       setInsights(ins);
+      if (fcSchema) {
+        setForecastSchema(fcSchema);
+        if (fcSchema.primary_metric && !selectedForecastMetric) {
+          setSelectedForecastMetric(fcSchema.primary_metric);
+        }
+      }
+      if (fcs && fcs.length > 0 && fcs[0].result) {
+        setForecastResult(fcs[0].result);
+      }
     } catch (err: any) {
       console.error("Failed to fetch analytics or insights", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const forecastChartData = useMemo(() => {
+    if (!forecastResult) return [];
+    const points: any[] = [];
+    const hist = forecastResult.historical_points || [];
+    const fcast = forecastResult.forecast_points || [];
+
+    hist.forEach(h => {
+      points.push({
+        date: h.date,
+        historical: h.value,
+        forecast: null,
+        lower_95: null,
+        upper_95: null,
+        confidence_range: null,
+      });
+    });
+
+    if (hist.length > 0 && fcast.length > 0) {
+      points[points.length - 1].forecast = hist[hist.length - 1].value;
+    }
+
+    fcast.forEach(f => {
+      points.push({
+        date: f.date,
+        historical: null,
+        forecast: f.forecast,
+        lower_95: f.lower_bound_95,
+        upper_95: f.upper_bound_95,
+        confidence_range: [f.lower_bound_95, f.upper_bound_95],
+      });
+    });
+
+    return points;
+  }, [forecastResult]);
 
   useEffect(() => {
     if (token) fetchData();
@@ -300,6 +413,18 @@ export default function AnalyticsPage() {
           >
             <MessageSquare className="w-4 h-4" />
             Ask Data (NL Query)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('forecast')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'forecast' 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Forecasting
           </button>
 
           <button
@@ -676,6 +801,318 @@ export default function AnalyticsPage() {
                   </div>
                 )}
               </div>
+            )}
+          </section>
+        )}
+
+        {/* SECTION 1.8: TIME-SERIES FORECASTING */}
+        {(activeTab === 'forecast' || activeTab === 'all') && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  Statistical Time-Series Forecasting
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Forward-looking projections with empirical backtesting, out-of-sample validation error, and confidence intervals.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Empirical Backtesting Verified</span>
+              </div>
+            </div>
+
+            {/* If dataset lacks temporal suitability */}
+            {forecastSchema && !forecastSchema.is_forecastable ? (
+              <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-bold text-amber-900">Insufficient Temporal Data For Forecasting</h3>
+                  <p className="text-xs text-amber-700 mt-1">
+                    This dataset does not contain valid parseable date or timestamp columns. Forecasting requires chronological observations to construct a time series.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Control Bar: Target Metric, Horizon, Model Selection */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Target Metric
+                      </label>
+                      <select
+                        value={selectedForecastMetric}
+                        onChange={(e) => setSelectedForecastMetric(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      >
+                        {forecastSchema?.metric_columns?.map((m: string) => (
+                          <option key={m} value={m}>{m.replace('_', ' ').toUpperCase()}</option>
+                        )) || (
+                          <option value="revenue">REVENUE</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Forecast Horizon
+                      </label>
+                      <select
+                        value={forecastHorizon}
+                        onChange={(e) => setForecastHorizon(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      >
+                        <option value={3}>3 Periods Forward</option>
+                        <option value={6}>6 Periods Forward</option>
+                        <option value={12}>12 Periods Forward</option>
+                        <option value={24}>24 Periods Forward</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Forecasting Model
+                      </label>
+                      <select
+                        value={selectedForecastModel}
+                        onChange={(e) => setSelectedForecastModel(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      >
+                        <option value="auto">Auto (Best Backtest RMSE)</option>
+                        <option value="holt_linear">Holt's Linear Exponential</option>
+                        <option value="linear_trend">Linear Trend (OLS)</option>
+                        <option value="moving_average">Moving Average with Drift</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <button
+                        onClick={runForecast}
+                        disabled={loadingForecast}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${loadingForecast ? 'animate-spin' : ''}`} />
+                        <span>{loadingForecast ? 'Computing Forecast...' : 'Generate Forecast'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {forecastError && (
+                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{forecastError}</span>
+                  </div>
+                )}
+
+                {/* Empty State before running forecast */}
+                {!forecastResult && !loadingForecast && !forecastError && (
+                  <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                      <TrendingUp className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-1">Time-Series Forecasting Ready</h3>
+                    <p className="text-slate-500 max-w-md text-xs mb-6">
+                      Select your target metric and horizon above, then click Generate Forecast to compute statistical projections with 80% and 95% confidence bounds.
+                    </p>
+                    <button
+                      onClick={runForecast}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      Run Initial Forecast
+                    </button>
+                  </div>
+                )}
+
+                {/* Result Section */}
+                {forecastResult && !loadingForecast && (
+                  <div className="space-y-6">
+                    {/* Performance & Model Info Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Model</div>
+                        <div className="text-base font-bold text-slate-900 mt-1 truncate">{forecastResult.selected_model}</div>
+                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                          Horizon: {forecastResult.horizon} periods ({forecastResult.frequency})
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Validation RMSE</div>
+                        <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                          {forecastResult.validation_metrics?.rmse != null 
+                            ? `$${Number(forecastResult.validation_metrics.rmse).toLocaleString()}` 
+                            : 'N/A'}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium mt-1">
+                          Holdout error ({forecastResult.validation_metrics?.holdout_periods} test periods)
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Validation MAE</div>
+                        <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                          {forecastResult.validation_metrics?.mae != null 
+                            ? `$${Number(forecastResult.validation_metrics.mae).toLocaleString()}` 
+                            : 'N/A'}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium mt-1">Mean absolute deviation</div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">MAPE Accuracy</div>
+                        <div className="text-2xl font-extrabold text-emerald-600 mt-1">
+                          {forecastResult.validation_metrics?.mape_pct != null 
+                            ? `${Number(forecastResult.validation_metrics.mape_pct).toFixed(1)}%` 
+                            : 'N/A'}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium mt-1">Mean percentage error</div>
+                      </div>
+                    </div>
+
+                    {/* Interactive Forecast Chart */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">
+                            Historical vs. Projected {forecastResult.target_column.replace('_', ' ').toUpperCase()}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Solid indigo line displays historical recordings; dashed emerald line shows {forecastResult.horizon}-period projections with shaded 95% confidence intervals.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="flex items-center gap-1.5 text-slate-700">
+                            <span className="w-3 h-0.5 bg-indigo-600 inline-block"></span> Historical
+                          </span>
+                          <span className="flex items-center gap-1.5 text-slate-700">
+                            <span className="w-3 h-0.5 bg-emerald-500 border-dashed border-t-2 border-emerald-500 inline-block"></span> Forecast
+                          </span>
+                          <span className="flex items-center gap-1.5 text-slate-700">
+                            <span className="w-3 h-3 bg-indigo-100 rounded-sm inline-block"></span> 95% Confidence
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={forecastChartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis 
+                              dataKey="date" 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fill: '#64748b', fontSize: 11 }} 
+                            />
+                            <YAxis 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fill: '#64748b', fontSize: 11 }} 
+                              tickFormatter={(v) => Number(v) >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              formatter={(val: any, name: any) => {
+                                if (Array.isArray(val)) {
+                                  return [`$${Number(val[0]).toLocaleString()} - $${Number(val[1]).toLocaleString()}`, '95% Confidence Band'];
+                                }
+                                if (val == null) return null;
+                                return [`$${Number(val).toLocaleString()}`, name === 'historical' ? 'Historical Actual' : 'Projected Forecast'];
+                              }}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="confidence_range" 
+                              fill="#e0e7ff" 
+                              stroke="transparent" 
+                              fillOpacity={0.6} 
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="historical" 
+                              stroke="#4f46e5" 
+                              strokeWidth={2.5} 
+                              dot={{ r: 3, fill: '#4f46e5' }} 
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="forecast" 
+                              stroke="#10b981" 
+                              strokeWidth={2.5} 
+                              strokeDasharray="5 5" 
+                              dot={{ r: 4, fill: '#10b981' }} 
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Projections Table */}
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+                      <div className="p-4 bg-slate-50 border-b border-slate-200">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                          Forecast Values & Uncertainty Intervals
+                        </h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                          <thead className="bg-slate-50/50 text-slate-600 font-semibold uppercase tracking-wider">
+                            <tr>
+                              <th className="px-4 py-3">Horizon Period</th>
+                              <th className="px-4 py-3">Projected Date</th>
+                              <th className="px-4 py-3">Projected Value</th>
+                              <th className="px-4 py-3">80% Confidence Range</th>
+                              <th className="px-4 py-3">95% Confidence Range</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700">
+                            {forecastResult.forecast_points.map((pt) => (
+                              <tr key={pt.date} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-4 py-2.5 font-bold text-indigo-600">+{pt.period_index}</td>
+                                <td className="px-4 py-2.5 font-medium">{pt.date}</td>
+                                <td className="px-4 py-2.5 font-bold text-slate-900">${pt.forecast.toLocaleString()}</td>
+                                <td className="px-4 py-2.5 text-slate-600">${pt.lower_bound_80.toLocaleString()} - ${pt.upper_bound_80.toLocaleString()}</td>
+                                <td className="px-4 py-2.5 text-slate-600">${pt.lower_bound_95.toLocaleString()} - ${pt.upper_bound_95.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Assumptions & Limitations */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+                          <Info className="w-4 h-4 text-indigo-600" />
+                          Model Assumptions
+                        </h4>
+                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                          {forecastResult.assumptions?.map((assm, aIdx) => (
+                            <li key={aIdx}>{assm}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          Limitations & Risk Boundaries
+                        </h4>
+                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                          {forecastResult.limitations?.map((lim, lIdx) => (
+                            <li key={lIdx}>{lim}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}

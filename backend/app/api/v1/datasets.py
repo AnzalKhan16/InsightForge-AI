@@ -1,5 +1,6 @@
 import uuid
 import hashlib
+from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from app.api.deps import ActiveUser, SessionDep
 from app.db.repositories.core import WorkspaceRepository
@@ -370,3 +371,185 @@ def query_dataset_natural_language(
     from app.core.nl_analytics import execute_nl_query
     response = execute_nl_query(df, payload.question)
     return response.model_dump()
+
+
+class ForecastRequest(BaseModel):
+    target_column: Optional[str] = None
+    time_column: Optional[str] = None
+    horizon: int = Field(default=6, ge=1, le=24)
+    frequency: Optional[str] = None
+    model_type: str = "auto"
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/forecast/schema")
+def get_dataset_forecast_schema(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    from app.engine.ml.forecasting import detect_temporal_schema
+    return detect_temporal_schema(df)
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/forecast")
+def run_dataset_forecast(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    payload: ForecastRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    from app.engine.ml.forecasting import (
+        detect_temporal_schema,
+        generate_forecast,
+        ForecastModelType,
+        TimeSeriesSuitabilityError,
+    )
+
+    schema = detect_temporal_schema(df)
+    target_col = payload.target_column or schema.get("primary_metric")
+    time_col = payload.time_column or schema.get("primary_date")
+
+    if not time_col:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate forecast: no valid temporal/date column found in dataset."
+        )
+    if not target_col:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate forecast: no numeric target metric column specified or found."
+        )
+
+    try:
+        model_enum = ForecastModelType(payload.model_type)
+    except Exception:
+        model_enum = ForecastModelType.AUTO
+
+    try:
+        res = generate_forecast(
+            df=df,
+            time_column=time_col,
+            target_column=target_col,
+            horizon=payload.horizon,
+            frequency=payload.frequency,
+            preferred_model=model_enum,
+        )
+    except TimeSeriesSuitabilityError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Forecasting engine failed: {e}")
+
+    from app.db.models.analytics import Forecast
+    from app.db.enums import ResultStatus
+
+    record = Forecast(
+        workspace_id=workspace_id,
+        created_by_id=current_user.id,
+        version_id=latest_version.id,
+        target_column=res["target_column"],
+        time_column=res["time_column"],
+        model_name=res["selected_model"],
+        horizon=res["horizon"],
+        frequency=res["frequency"],
+        params=res["model_parameters"],
+        metrics=res["validation_metrics"],
+        result=res,
+        status=ResultStatus.COMPLETED,
+    )
+    session.add(record)
+    session.commit()
+
+    return {
+        "id": str(record.id),
+        "status": "success",
+        **res
+    }
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/forecasts")
+def list_dataset_forecasts(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Forecast
+    from app.db.models.datasets import DatasetVersion
+    from sqlalchemy import select
+
+    stmt = (
+        select(Forecast)
+        .join(DatasetVersion, Forecast.version_id == DatasetVersion.id)
+        .where(
+            Forecast.workspace_id == workspace_id,
+            DatasetVersion.dataset_id == dataset_id
+        )
+        .order_by(Forecast.created_at.desc())
+    )
+    records = session.execute(stmt).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "version_id": r.version_id,
+            "target_column": r.target_column,
+            "time_column": r.time_column,
+            "model_name": r.model_name,
+            "horizon": r.horizon,
+            "frequency": r.frequency,
+            "params": r.params,
+            "metrics": r.metrics,
+            "result": r.result,
+            "status": r.status,
+            "created_at": r.created_at,
+        }
+        for r in records
+    ]
