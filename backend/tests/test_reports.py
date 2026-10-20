@@ -129,9 +129,9 @@ def test_generate_executive_report(mock_analytical_assets):
     assert len(report["recommendations"]) >= 3
     assert "# Executive Strategic Briefing: Quarterly Financials" in report["markdown_content"]
     assert "## 1. Executive Summary" in report["markdown_content"]
-    assert "## 3. Forward-Looking Projections" in report["markdown_content"]
-    assert "## 4. Anomaly Detection & Data Integrity" in report["markdown_content"]
-    assert "## 6. Strategic Action Matrix" in report["markdown_content"]
+    assert "Forward-Looking Projections" in report["markdown_content"]
+    assert "Anomaly Detection & Data Integrity" in report["markdown_content"]
+    assert "Strategic Action Matrix" in report["markdown_content"]
 
 
 def test_report_and_recommendation_api_endpoints(client: TestClient, session):
@@ -199,8 +199,128 @@ def test_report_and_recommendation_api_endpoints(client: TestClient, session):
     assert single_res.status_code == 200
     assert single_res.json()["id"] == report_id
 
-    # 8. Download Report Markdown endpoint
-    down_res = client.get(f"/api/v1/workspaces/{ws_id}/reports/{report_id}/download", headers=headers)
-    assert down_res.status_code == 200
-    assert down_res.headers["content-type"].startswith("text/markdown")
-    assert b"# Q1 Executive Performance Review" in down_res.content
+    # 8. Download Report Multi-Format endpoints
+    # 8a. Markdown
+    down_md = client.get(f"/api/v1/workspaces/{ws_id}/reports/{report_id}/download?format=markdown", headers=headers)
+    assert down_md.status_code == 200
+    assert "text/markdown" in down_md.headers["content-type"]
+    assert "filename=" in down_md.headers.get("content-disposition", "")
+    assert b"# Q1 Executive Performance Review" in down_md.content
+
+    # 8b. HTML
+    down_html = client.get(f"/api/v1/workspaces/{ws_id}/reports/{report_id}/download?format=html", headers=headers)
+    assert down_html.status_code == 200
+    assert "text/html" in down_html.headers["content-type"]
+    assert ".html" in down_html.headers.get("content-disposition", "")
+    assert b"<!DOCTYPE html>" in down_html.content
+
+    # 8c. JSON
+    down_json = client.get(f"/api/v1/workspaces/{ws_id}/reports/{report_id}/download?format=json", headers=headers)
+    assert down_json.status_code == 200
+    assert "application/json" in down_json.headers["content-type"]
+    assert ".json" in down_json.headers.get("content-disposition", "")
+    json_data = down_json.json()
+    assert json_data["id"] == report_id
+
+    # 9. View Report HTML endpoint (Presentation View)
+    view_res = client.get(f"/api/v1/workspaces/{ws_id}/reports/{report_id}/view", headers=headers)
+    assert view_res.status_code == 200
+    assert "text/html" in view_res.headers["content-type"]
+    assert "inline" in view_res.headers.get("content-disposition", "")
+    assert b"<!DOCTYPE html>" in view_res.content
+
+
+def test_report_metadata_and_assumptions(mock_analytical_assets):
+    metrics, insights, forecast, anomalies, segments = mock_analytical_assets
+    import pandas as pd
+    df = pd.DataFrame({
+        "order_date": ["2026-01-01", "2026-02-01", "2026-03-01"],
+        "region": ["North", "South", "East"],
+        "revenue": [100.0, 200.0, 300.0]
+    })
+    report = generate_executive_report(
+        dataset_name="Multi-Dimension Corp",
+        dataset_id="test-ds-id",
+        version_id="test-ver-id",
+        metrics=metrics,
+        insights=insights,
+        forecast=forecast,
+        anomalies=anomalies,
+        segments=segments,
+        df=df,
+    )
+    # Check required Phase 15 identifications
+    assert report["dataset_name"] == "Multi-Dimension Corp"
+    assert "January 01, 2026 – March 01, 2026" in report["reporting_period"]
+    assert report["generated_time"] is not None
+    assert report["generated_at"] is not None
+    assert "Transaction Ledger Records" in report["analytical_scope"]
+    assert len(report["assumptions"]) >= 3
+    assert len(report["limitations"]) >= 2
+    assert "html_content" in report
+    assert "<!DOCTYPE html>" in report["html_content"]
+    assert "@media print" in report["html_content"]
+
+
+def test_reports_with_different_datasets():
+    import pandas as pd
+    
+    # Dataset 1: Cross-Sectional Dataset (NO dates, survey/HR ratings)
+    hr_df = pd.DataFrame({
+        "employee_id": [f"E{i}" for i in range(1, 11)],
+        "department": ["Sales", "Engineering", "Marketing", "Sales", "Engineering", "Sales", "Support", "Support", "Engineering", "Marketing"],
+        "salary": [65000, 110000, 75000, 70000, 125000, 68000, 55000, 58000, 115000, 78000],
+        "performance_score": [88, 92, 85, 90, 95, 87, 82, 84, 91, 89]
+    })
+    hr_metrics = {
+        "revenue": 823000.0,
+        "order_count": 10,
+        "avg_salary": 82300.0,
+        "breakdowns": {"department": {"Sales": 203000, "Engineering": 350000}}
+    }
+    hr_report = generate_executive_report(
+        dataset_name="Cross-Sectional Employee Compensation",
+        metrics=hr_metrics,
+        insights=[{"title": "Engineering High Compensation", "body": "Engineering accounts for top quartile pay.", "severity": "info"}],
+        forecast=None,  # No temporal forecast possible
+        anomalies=[],    # Clean dataset, no anomalies
+        segments=None,
+        df=hr_df
+    )
+    assert hr_report["reporting_period"] == "Cross-Sectional Baseline (Snapshot Analysis)"
+    assert "10 Transaction Ledger Records" in hr_report["analytical_scope"]
+    assert hr_report["has_forecast"] is False
+    assert hr_report["has_anomalies"] is False
+    assert "No statistical anomalies or invariant violations were detected" in hr_report["markdown_content"]
+    assert "html_content" in hr_report
+
+    # Dataset 2: Single-Metric Dataset (single numerical column, e.g. sensor readings)
+    sensor_df = pd.DataFrame({
+        "reading_value": [23.4, 23.8, 24.1, 23.9, 24.0, 99.5, 23.7, 24.2]
+    })
+    sensor_metrics = {
+        "mean_reading": 33.32,
+        "count": 8,
+        "revenue": None
+    }
+    sensor_anomalies = [{
+        "nature": "statistical_outlier",
+        "column_name": "reading_value",
+        "observed_value": 99.5,
+        "expected_value": 24.0,
+        "status": "open"
+    }]
+    sensor_report = generate_executive_report(
+        dataset_name="IoT Thermal Telemetry",
+        metrics=sensor_metrics,
+        insights=[],
+        forecast=None,
+        anomalies=sensor_anomalies,
+        segments=None,
+        df=sensor_df
+    )
+    assert sensor_report["has_anomalies"] is True
+    assert sensor_report["has_forecast"] is False
+    assert "99.5" in sensor_report["markdown_content"]
+    assert "IoT Thermal Telemetry" in sensor_report["title"]
+

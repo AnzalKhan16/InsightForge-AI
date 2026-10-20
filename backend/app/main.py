@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import logging
 import uuid
 
@@ -7,8 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
+from app.db import models  # noqa: F401
+from app.db.base import Base
+from app.db.session import get_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure tables exist in development / local mode
+    Base.metadata.create_all(bind=get_engine())
+    yield
 
 
 def create_app() -> FastAPI:
@@ -19,6 +30,7 @@ def create_app() -> FastAPI:
         debug=settings.debug,
         docs_url="/docs",
         openapi_url=f"{settings.api_v1_prefix}/openapi.json",
+        lifespan=lifespan,
     )
 
     app.add_middleware(

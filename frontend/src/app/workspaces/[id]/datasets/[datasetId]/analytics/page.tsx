@@ -13,7 +13,7 @@ import {
   Sparkles, ShieldCheck, AlertTriangle, AlertOctagon, Info, ChevronDown, ChevronUp,
   Layers, Filter, Database, CheckCircle2, MessageSquare, Send, CornerDownRight,
   HelpCircle, BarChart3, Search, Calendar, Gauge, ShieldAlert, EyeOff, Check, X,
-  FileText, Download, Copy, Printer, CheckCircle, Target, Clock, ArrowRight
+  FileText, Download, Copy, Printer, CheckCircle, Target, Clock, ArrowRight, ExternalLink
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
@@ -35,19 +35,33 @@ interface ExecutiveReportItem {
   status: string;
   storage_key?: string;
   created_at?: string;
+  reporting_period?: string;
+  analytical_scope?: string;
+  assumptions?: string[];
+  limitations?: string[];
   content?: {
     title: string;
     dataset_name: string;
     dataset_id?: string;
     version_id?: string;
     generated_at: string;
+    generated_time?: string;
+    reporting_period?: string;
+    analytical_scope?: string;
+    assumptions?: string[];
+    limitations?: string[];
     executive_summary: string[];
     kpis: Array<{ label: string; value: string; detail: string }>;
     recommendations: RecommendationItem[];
     has_forecast: boolean;
+    forecast_model?: string;
+    forecast_points?: any[];
     has_anomalies: boolean;
+    anomalies?: any[];
     has_segments: boolean;
+    segments?: any[];
     markdown_content: string;
+    html_content?: string;
   };
 }
 
@@ -326,22 +340,89 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleDownloadReport = (rep?: ExecutiveReportItem | null) => {
+  const handleDownloadReport = async (fmt: 'markdown' | 'html' | 'json' = 'markdown', rep?: ExecutiveReportItem | null) => {
     const target = rep || activeReport;
-    if (!target || !target.content?.markdown_content) {
-      alert("No report markdown content available for download");
+    if (!target) {
+      alert("No report available for download");
       return;
     }
-    const blob = new Blob([target.content.markdown_content], { type: 'text/markdown;charset=utf-8;' });
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/reports/${target.id}/download?format=${fmt}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const disposition = res.headers.get('content-disposition');
+        let filename = `${(target.title || 'executive_report').toLowerCase().replace(/[^a-z0-9]+/g, '_')}.${fmt === 'html' ? 'html' : fmt === 'json' ? 'json' : 'md'}`;
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+          const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+          if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch (err) {
+      console.warn("Direct download endpoint failed, falling back to local memory buffer", err);
+    }
+
+    // Local in-memory buffer fallback
+    let blob: Blob;
+    let ext = 'md';
+    if (fmt === 'html') {
+      const htmlText = target.content?.html_content || '';
+      blob = new Blob([htmlText], { type: 'text/html;charset=utf-8;' });
+      ext = 'html';
+    } else if (fmt === 'json') {
+      blob = new Blob([JSON.stringify(target, null, 2)], { type: 'application/json;charset=utf-8;' });
+      ext = 'json';
+    } else {
+      blob = new Blob([target.content?.markdown_content || ''], { type: 'text/markdown;charset=utf-8;' });
+      ext = 'md';
+    }
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     const cleanTitle = (target.title || 'executive_report').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    link.setAttribute('download', `${cleanTitle}.md`);
+    link.setAttribute('download', `${cleanTitle}.${ext}`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleOpenPresentationView = async (rep?: ExecutiveReportItem | null) => {
+    const target = rep || activeReport;
+    if (!target) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/reports/${target.id}/view`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        return;
+      }
+    } catch (e) {
+      console.warn('Could not fetch /view endpoint, using local content', e);
+    }
+    if (target.content?.html_content) {
+      const blob = new Blob([target.content.html_content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
   };
 
   const handleCopyMarkdown = (content?: string) => {
@@ -2686,12 +2767,39 @@ export default function AnalyticsPage() {
                     </button>
 
                     <button
-                      onClick={() => handleDownloadReport(activeReport)}
+                      onClick={() => handleOpenPresentationView(activeReport)}
                       className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-medium transition-colors shadow-sm"
-                      title="Download Markdown Report File"
+                      title="Open full-page Boardroom HTML in new tab"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Boardroom View
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadReport('html', activeReport)}
+                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                      title="Download Boardroom HTML (.html)"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Download (.md)
+                      HTML
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadReport('markdown', activeReport)}
+                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                      title="Download Markdown Report (.md)"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      MD
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadReport('json', activeReport)}
+                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                      title="Export Structured Report Data (.json)"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      JSON
                     </button>
 
                     <button
@@ -2709,6 +2817,37 @@ export default function AnalyticsPage() {
                 <div className="p-6 md:p-8">
                   {reportViewMode === 'document' ? (
                     <div className="space-y-8 max-w-5xl mx-auto">
+                      {/* Executive Context & Scope Metadata Banner */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs">
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <Calendar className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-slate-400">Reporting Period</div>
+                            <div className="font-semibold text-slate-800">
+                              {activeReport.content?.reporting_period || activeReport.reporting_period || 'Cross-Sectional Baseline'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <Clock className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-slate-400">Generated At</div>
+                            <div className="font-semibold text-slate-800">
+                              {activeReport.content?.generated_at || (activeReport.created_at ? new Date(activeReport.created_at).toLocaleString() : 'Current Session')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <Database className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-slate-400">Analytical Scope</div>
+                            <div className="font-semibold text-slate-800 truncate" title={activeReport.content?.analytical_scope || activeReport.analytical_scope || 'Complete Transaction Ledger'}>
+                              {activeReport.content?.analytical_scope || activeReport.analytical_scope || 'Complete Transaction Ledger'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Executive Summary Callout */}
                       {activeReport.content?.executive_summary && (
                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
@@ -2789,6 +2928,45 @@ export default function AnalyticsPage() {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Assumptions & Limitations Disclosures */}
+                      {((activeReport.content?.assumptions && activeReport.content.assumptions.length > 0) || 
+                        (activeReport.content?.limitations && activeReport.content.limitations.length > 0)) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {activeReport.content.assumptions && activeReport.content.assumptions.length > 0 && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5 flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                Modeling Assumptions
+                              </h5>
+                              <ul className="space-y-2 text-xs text-slate-600">
+                                {activeReport.content.assumptions.map((assump, aIdx) => (
+                                  <li key={aIdx} className="flex items-start gap-2">
+                                    <span className="text-slate-400 mt-0.5">•</span>
+                                    <span>{assump}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {activeReport.content.limitations && activeReport.content.limitations.length > 0 && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                Scope Boundaries & Limitations
+                              </h5>
+                              <ul className="space-y-2 text-xs text-slate-600">
+                                {activeReport.content.limitations.map((lim, lIdx) => (
+                                  <li key={lIdx} className="flex items-start gap-2">
+                                    <span className="text-slate-400 mt-0.5">•</span>
+                                    <span>{lim}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

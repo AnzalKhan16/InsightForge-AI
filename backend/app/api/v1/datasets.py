@@ -213,7 +213,7 @@ def analyze_dataset(
         params={}
     )
     session.add(job)
-    session.flush()
+    session.commit()
     
     from app.core.analytics_task import analyze_dataset_task
     background_tasks.add_task(analyze_dataset_task, job_id=job.id)
@@ -278,7 +278,7 @@ def generate_dataset_insights(
         params={}
     )
     session.add(job)
-    session.flush()
+    session.commit()
 
     from app.core.insights_task import generate_insights_task
     background_tasks.add_task(generate_insights_task, job_id=job.id)
@@ -1064,6 +1064,22 @@ def create_dataset_report_endpoint(
         session, workspace_id, dataset_id, latest_version.id
     )
 
+    df = None
+    try:
+        storage = get_storage()
+        file_obj = storage.get_file(latest_version.raw_storage_key)
+        content_bytes = file_obj.read()
+        file_obj.close()
+        import io
+        import pandas as pd
+        from app.db.enums import DatasetFormat
+        if latest_version.format == DatasetFormat.CSV:
+            df = pd.read_csv(io.BytesIO(content_bytes))
+        elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+            df = pd.read_excel(io.BytesIO(content_bytes))
+    except Exception:
+        pass
+
     from app.core.reports import generate_executive_report
     report_data = generate_executive_report(
         dataset_name=dataset.name,
@@ -1075,6 +1091,7 @@ def create_dataset_report_endpoint(
         anomalies=anomalies,
         segments=segments,
         custom_title=payload.title,
+        df=df,
     )
 
     # Save to object storage
@@ -1176,6 +1193,67 @@ def download_report_markdown(
     workspace_id: uuid.UUID,
     report_id: uuid.UUID,
     current_user: ActiveUser,
+    session: SessionDep,
+    format: str = "markdown",
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Report
+    from sqlalchemy import select
+    import json
+
+    report = session.execute(
+        select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
+    ).scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    clean_name = report.title.lower().replace(" ", "_")[:40]
+    fmt = format.lower().strip()
+
+    if fmt in ("html", "htm"):
+        html_text = (report.content or {}).get("html_content")
+        if not html_text:
+            from app.core.reports import generate_html_report
+            html_text = generate_html_report(report.content or {})
+        return Response(
+            content=html_text.encode("utf-8"),
+            media_type="text/html",
+            headers={"Content-Disposition": f'attachment; filename="{clean_name}.html"'}
+        )
+
+    if fmt == "json":
+        data = dict(report.content or {})
+        data["id"] = str(report.id)
+        data["workspace_id"] = str(report.workspace_id)
+        data["status"] = report.status
+        json_text = json.dumps(data, default=str, indent=2)
+        return Response(
+            content=json_text.encode("utf-8"),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{clean_name}.json"'}
+        )
+
+    # Default to markdown
+    md_content = (report.content or {}).get("markdown_content")
+    if not md_content and report.storage_key:
+        storage = get_storage()
+        file_obj = storage.get_file(report.storage_key)
+        md_content = file_obj.read().decode("utf-8")
+        file_obj.close()
+
+    md_content = md_content or f"# {report.title}\n\n*No report content available.*"
+    return Response(
+        content=md_content.encode("utf-8"),
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{clean_name}.md"'}
+    )
+
+
+@router.get("/workspaces/{workspace_id}/reports/{report_id}/view")
+def view_report_html(
+    workspace_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: ActiveUser,
     session: SessionDep
 ):
     _check_workspace_access(session, workspace_id, current_user.id)
@@ -1185,19 +1263,18 @@ def download_report_markdown(
     report = session.execute(
         select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
     ).scalar_one_or_none()
-    if not report or not report.storage_key:
-        raise HTTPException(status_code=404, detail="Report or storage file not found")
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
 
-    storage = get_storage()
-    file_obj = storage.get_file(report.storage_key)
-    file_bytes = file_obj.read()
-    file_obj.close()
+    html_text = (report.content or {}).get("html_content")
+    if not html_text:
+        from app.core.reports import generate_html_report
+        html_text = generate_html_report(report.content or {})
 
-    filename = f"{report.title.lower().replace(' ', '_')[:40]}.md"
     return Response(
-        content=file_bytes,
-        media_type="text/markdown",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        content=html_text.encode("utf-8"),
+        media_type="text/html",
+        headers={"Content-Disposition": "inline"}
     )
 
 
