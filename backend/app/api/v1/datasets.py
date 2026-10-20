@@ -1,7 +1,7 @@
 import uuid
 import hashlib
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks, Response
 from app.api.deps import ActiveUser, SessionDep
 from app.db.repositories.core import WorkspaceRepository
 from app.db.repositories.datasets import DatasetRepository
@@ -912,4 +912,292 @@ def list_dataset_segments(
         "method": method,
         "segments": segments_out,
     }
+
+
+def _gather_dataset_analytical_assets(session, workspace_id: uuid.UUID, dataset_id: uuid.UUID, latest_version_id: uuid.UUID):
+    from app.db.models.analytics import SavedAnalysis, Insight, Forecast, Anomaly, Segment
+    from sqlalchemy import select
+
+    # 1. Metrics from auto analysis
+    analysis_stmt = (
+        select(SavedAnalysis)
+        .where(SavedAnalysis.workspace_id == workspace_id, SavedAnalysis.version_id == latest_version_id)
+        .order_by(SavedAnalysis.created_at.desc())
+        .limit(1)
+    )
+    analysis = session.execute(analysis_stmt).scalar_one_or_none()
+    metrics = analysis.result.get("metrics") if (analysis and analysis.result) else {}
+
+    # 2. Insights
+    insights_stmt = (
+        select(Insight)
+        .where(Insight.workspace_id == workspace_id, Insight.version_id == latest_version_id)
+        .order_by(Insight.created_at.desc())
+    )
+    insights_records = session.execute(insights_stmt).scalars().all()
+    insights = [
+        {
+            "id": str(i.id),
+            "severity": i.severity.value if hasattr(i.severity, "value") else str(i.severity),
+            "title": i.title,
+            "body": i.body,
+            "evidence": i.evidence,
+        }
+        for i in insights_records
+    ]
+
+    # 3. Forecast
+    forecast_stmt = (
+        select(Forecast)
+        .where(Forecast.workspace_id == workspace_id, Forecast.version_id == latest_version_id)
+        .order_by(Forecast.created_at.desc())
+        .limit(1)
+    )
+    forecast_record = session.execute(forecast_stmt).scalar_one_or_none()
+    forecast = forecast_record.result if forecast_record else None
+
+    # 4. Anomalies
+    anomalies_stmt = (
+        select(Anomaly)
+        .where(Anomaly.workspace_id == workspace_id, Anomaly.version_id == latest_version_id)
+        .order_by(Anomaly.score.desc().nullslast())
+    )
+    anomalies_records = session.execute(anomalies_stmt).scalars().all()
+    anomalies = [
+        {
+            "id": str(a.id),
+            "column_name": a.column_name,
+            "observed_value": a.observed_value,
+            "expected_value": a.expected_value,
+            "score": a.score,
+            "severity": a.severity.value if hasattr(a.severity, "value") else str(a.severity),
+            "status": a.status.value if hasattr(a.status, "value") else str(a.status),
+            "nature": a.details.get("nature") if a.details else "detected_anomaly",
+            "title": a.details.get("title") if a.details else f"Anomaly in {a.column_name}",
+        }
+        for a in anomalies_records
+    ]
+
+    # 5. Segments
+    latest_run_stmt = (
+        select(Segment.run_id)
+        .where(Segment.workspace_id == workspace_id, Segment.version_id == latest_version_id)
+        .order_by(Segment.created_at.desc())
+        .limit(1)
+    )
+    latest_run_id = session.execute(latest_run_stmt).scalar_one_or_none()
+    segments = None
+    if latest_run_id:
+        seg_records = session.execute(
+            select(Segment).where(Segment.workspace_id == workspace_id, Segment.run_id == latest_run_id)
+        ).scalars().all()
+        if seg_records:
+            segments = {
+                "method": seg_records[0].method,
+                "total_entities": sum(r.member_count for r in seg_records),
+                "segments": [
+                    {
+                        "label": r.label,
+                        "subtitle": r.params.get("subtitle") if r.params else "",
+                        "member_count": r.member_count,
+                        "percentage_of_members": r.params.get("percentage_of_members", 0.0) if r.params else 0.0,
+                        "total_monetary": r.params.get("total_monetary", 0.0) if r.params else 0.0,
+                        "percentage_of_monetary": r.params.get("percentage_of_monetary", 0.0) if r.params else 0.0,
+                        "recommendation": r.params.get("recommendation") if r.params else "",
+                    }
+                    for r in seg_records
+                ]
+            }
+
+    return metrics, insights, forecast, anomalies, segments
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/recommendations")
+def get_dataset_recommendations_endpoint(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    metrics, insights, forecast, anomalies, segments = _gather_dataset_analytical_assets(
+        session, workspace_id, dataset_id, latest_version.id
+    )
+
+    from app.core.reports import generate_prescriptive_recommendations
+    recs = generate_prescriptive_recommendations(
+        metrics=metrics,
+        insights=insights,
+        forecast=forecast,
+        anomalies=anomalies,
+        segments=segments,
+    )
+    return {"recommendations": recs}
+
+
+class ReportCreateRequest(BaseModel):
+    title: Optional[str] = None
+
+
+@router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/reports")
+def create_dataset_report_endpoint(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    payload: ReportCreateRequest,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+
+    latest_version = dataset.versions[-1]
+    metrics, insights, forecast, anomalies, segments = _gather_dataset_analytical_assets(
+        session, workspace_id, dataset_id, latest_version.id
+    )
+
+    from app.core.reports import generate_executive_report
+    report_data = generate_executive_report(
+        dataset_name=dataset.name,
+        dataset_id=str(dataset_id),
+        version_id=str(latest_version.id),
+        metrics=metrics,
+        insights=insights,
+        forecast=forecast,
+        anomalies=anomalies,
+        segments=segments,
+        custom_title=payload.title,
+    )
+
+    # Save to object storage
+    report_id = uuid.uuid4()
+    storage_key = f"reports/{workspace_id}/{report_id}.md"
+    storage = get_storage()
+    import io
+    storage.upload_file(io.BytesIO(report_data["markdown_content"].encode("utf-8")), storage_key)
+
+    # Save to database
+    from app.db.models.analytics import Report
+    from app.db.enums import ReportStatus
+    report_record = Report(
+        id=report_id,
+        workspace_id=workspace_id,
+        created_by_id=current_user.id,
+        dataset_id=dataset_id,
+        version_id=latest_version.id,
+        title=report_data["title"],
+        status=ReportStatus.READY,
+        content=report_data,
+        storage_key=storage_key,
+    )
+    session.add(report_record)
+    session.commit()
+
+    return {
+        "id": str(report_record.id),
+        "title": report_record.title,
+        "status": report_record.status.value,
+        "content": report_record.content,
+        "storage_key": report_record.storage_key,
+        "created_at": report_record.created_at,
+    }
+
+
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/reports")
+def list_dataset_reports_endpoint(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Report
+    from sqlalchemy import select
+
+    stmt = (
+        select(Report)
+        .where(
+            Report.workspace_id == workspace_id,
+            Report.dataset_id == dataset_id
+        )
+        .order_by(Report.created_at.desc())
+    )
+    records = session.execute(stmt).scalars().all()
+    return [
+        {
+            "id": str(r.id),
+            "title": r.title,
+            "status": r.status.value if hasattr(r.status, "value") else str(r.status),
+            "storage_key": r.storage_key,
+            "created_at": r.created_at,
+        }
+        for r in records
+    ]
+
+
+@router.get("/workspaces/{workspace_id}/reports/{report_id}")
+def get_report_endpoint(
+    workspace_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Report
+    from sqlalchemy import select
+
+    report = session.execute(
+        select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
+    ).scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return {
+        "id": str(report.id),
+        "dataset_id": str(report.dataset_id) if report.dataset_id else None,
+        "title": report.title,
+        "status": report.status.value if hasattr(report.status, "value") else str(report.status),
+        "content": report.content,
+        "storage_key": report.storage_key,
+        "created_at": report.created_at,
+    }
+
+
+@router.get("/workspaces/{workspace_id}/reports/{report_id}/download")
+def download_report_markdown(
+    workspace_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    from app.db.models.analytics import Report
+    from sqlalchemy import select
+
+    report = session.execute(
+        select(Report).where(Report.id == report_id, Report.workspace_id == workspace_id)
+    ).scalar_one_or_none()
+    if not report or not report.storage_key:
+        raise HTTPException(status_code=404, detail="Report or storage file not found")
+
+    storage = get_storage()
+    file_obj = storage.get_file(report.storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    filename = f"{report.title.lower().replace(' ', '_')[:40]}.md"
+    return Response(
+        content=file_bytes,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 

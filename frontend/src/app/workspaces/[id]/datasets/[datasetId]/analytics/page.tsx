@@ -12,10 +12,44 @@ import {
   ArrowUpRight, TrendingUp, Users, DollarSign, ShoppingCart, Activity, RefreshCw,
   Sparkles, ShieldCheck, AlertTriangle, AlertOctagon, Info, ChevronDown, ChevronUp,
   Layers, Filter, Database, CheckCircle2, MessageSquare, Send, CornerDownRight,
-  HelpCircle, BarChart3, Search, Calendar, Gauge, ShieldAlert, EyeOff, Check, X
+  HelpCircle, BarChart3, Search, Calendar, Gauge, ShieldAlert, EyeOff, Check, X,
+  FileText, Download, Copy, Printer, CheckCircle, Target, Clock, ArrowRight
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+
+interface RecommendationItem {
+  id: string;
+  title: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  category: string;
+  impact_summary: string;
+  evidence?: Record<string, any>;
+  rationale: string;
+  action_plan: string[];
+}
+
+interface ExecutiveReportItem {
+  id: string;
+  title: string;
+  status: string;
+  storage_key?: string;
+  created_at?: string;
+  content?: {
+    title: string;
+    dataset_name: string;
+    dataset_id?: string;
+    version_id?: string;
+    generated_at: string;
+    executive_summary: string[];
+    kpis: Array<{ label: string; value: string; detail: string }>;
+    recommendations: RecommendationItem[];
+    has_forecast: boolean;
+    has_anomalies: boolean;
+    has_segments: boolean;
+    markdown_content: string;
+  };
+}
 
 interface AnomalyItem {
   id: string;
@@ -204,12 +238,127 @@ export default function AnalyticsPage() {
   const [segmentationError, setSegmentationError] = useState<string | null>(null);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(0);
 
+  // Recommendations & Executive Reports state
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState<boolean>(false);
+  const [reportsList, setReportsList] = useState<Array<{ id: string; title: string; status: string; storage_key: string; created_at: string }>>([]);
+  const [activeReport, setActiveReport] = useState<ExecutiveReportItem | null>(null);
+  const [loadingReportDetails, setLoadingReportDetails] = useState<boolean>(false);
+  const [generatingReport, setGeneratingReport] = useState<boolean>(false);
+  const [reportTitleInput, setReportTitleInput] = useState<string>('');
+  const [reportViewMode, setReportViewMode] = useState<'document' | 'markdown'>('document');
+  const [copiedReport, setCopiedReport] = useState<boolean>(false);
+  const [recPriorityFilter, setRecPriorityFilter] = useState<string>('all');
+  const [recCategoryFilter, setRecCategoryFilter] = useState<string>('all');
+  const [expandedRecId, setExpandedRecId] = useState<string | null>(null);
+
   // Tabs & filters
-  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'anomalies' | 'segments' | 'charts' | 'all'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'nlq' | 'forecast' | 'anomalies' | 'segments' | 'reports' | 'charts' | 'all'>('insights');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
+
+  const loadReportDetails = async (reportId: string) => {
+    try {
+      setLoadingReportDetails(true);
+      const rep = await apiFetch<ExecutiveReportItem>(`/workspaces/${workspaceId}/reports/${reportId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setActiveReport(rep);
+    } catch (err: any) {
+      console.error("Failed to load report details", err);
+    } finally {
+      setLoadingReportDetails(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      const payload: { title?: string } = {};
+      if (reportTitleInput.trim()) {
+        payload.title = reportTitleInput.trim();
+      }
+      const newReport = await apiFetch<ExecutiveReportItem>(`/workspaces/${workspaceId}/datasets/${datasetId}/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+      setActiveReport(newReport);
+      setReportsList(prev => [
+        {
+          id: newReport.id,
+          title: newReport.title,
+          status: newReport.status,
+          storage_key: newReport.storage_key || '',
+          created_at: newReport.created_at || new Date().toISOString(),
+        },
+        ...prev
+      ]);
+      if (newReport.content?.recommendations) {
+        setRecommendations(newReport.content.recommendations);
+      }
+      setReportTitleInput('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to compile executive report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleRefreshRecommendations = async () => {
+    try {
+      setLoadingRecommendations(true);
+      const res = await apiFetch<{ recommendations: RecommendationItem[] }>(`/workspaces/${workspaceId}/datasets/${datasetId}/recommendations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res && res.recommendations) {
+        setRecommendations(res.recommendations);
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh recommendations', err);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
+
+  const handleDownloadReport = (rep?: ExecutiveReportItem | null) => {
+    const target = rep || activeReport;
+    if (!target || !target.content?.markdown_content) {
+      alert("No report markdown content available for download");
+      return;
+    }
+    const blob = new Blob([target.content.markdown_content], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const cleanTitle = (target.title || 'executive_report').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    link.setAttribute('download', `${cleanTitle}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopyMarkdown = (content?: string) => {
+    const text = content || activeReport?.content?.markdown_content || '';
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2000);
+  };
+
+  const filteredRecommendations = useMemo(() => {
+    return recommendations.filter(rec => {
+      if (recPriorityFilter !== 'all' && rec.priority !== recPriorityFilter) return false;
+      if (recCategoryFilter !== 'all' && rec.category !== recCategoryFilter) return false;
+      return true;
+    });
+  }, [recommendations, recPriorityFilter, recCategoryFilter]);
 
   const runSegmentation = async () => {
     setRunningSegmentation(true);
@@ -361,7 +510,7 @@ export default function AnalyticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ds, an, ins, fcSchema, fcs, anoms, sSchema, sResult] = await Promise.all([
+      const [ds, an, ins, fcSchema, fcs, anoms, sSchema, sResult, recs, reps] = await Promise.all([
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -386,6 +535,12 @@ export default function AnalyticsPage() {
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/segments`, {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
+        apiFetch<{ recommendations: RecommendationItem[] }>(`/workspaces/${workspaceId}/datasets/${datasetId}/recommendations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => ({ recommendations: [] })),
+        apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/reports`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => []),
       ]);
       setDataset(ds);
       setAnalyses(an);
@@ -419,6 +574,15 @@ export default function AnalyticsPage() {
       }
       if (sResult && sResult.segments && sResult.segments.length > 0) {
         setSegmentationResult(sResult);
+      }
+      if (recs && recs.recommendations) {
+        setRecommendations(recs.recommendations);
+      }
+      if (reps && Array.isArray(reps)) {
+        setReportsList(reps);
+        if (reps.length > 0 && reps[0].id) {
+          loadReportDetails(reps[0].id);
+        }
       }
     } catch (err: any) {
       console.error("Failed to fetch analytics or insights", err);
@@ -667,6 +831,23 @@ export default function AnalyticsPage() {
             {segmentationResult?.segments && segmentationResult.segments.length > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'segments' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700 font-bold'}`}>
                 {segmentationResult.segments.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'reports' 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Executive Reports & Actions
+            {recommendations.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'reports' ? 'bg-indigo-500 text-white' : 'bg-amber-100 text-amber-800 font-bold'}`}>
+                {recommendations.length}
               </span>
             )}
           </button>
@@ -2168,6 +2349,457 @@ export default function AnalyticsPage() {
                       Decomposes inventory revenue into Class A core drivers (top 80%), Class B steady contributors (15%), and Class C long-tail SKUs (5%).
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* SECTION 1.98: PRESCRIPTIVE RECOMMENDATIONS & EXECUTIVE REPORTS */}
+        {(activeTab === 'reports' || activeTab === 'all') && (
+          <section className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                  Prescriptive Recommendations & Executive Briefing
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Cross-layer synthesis translating empirical metrics, forecasts, anomalies, and customer cohorts into prioritized actions and boardroom-ready briefs.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Empirically Grounded Prescriptive Strategy</span>
+              </div>
+            </div>
+
+            {/* Generator Card & Report Switcher */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-6 border-b border-slate-100">
+                <div className="max-w-xl">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Boardroom Briefing Generator
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Compile Automated Executive Report
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Synthesizes verified KPIs, strategic findings, forward projections, detected risks, and prioritized recommendations into structured JSON and publishable Markdown.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <input
+                    type="text"
+                    value={reportTitleInput}
+                    onChange={(e) => setReportTitleInput(e.target.value)}
+                    placeholder="Report title (e.g. Q4 Executive Briefing)"
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[280px]"
+                  />
+                  <button
+                    onClick={handleGenerateReport}
+                    disabled={generatingReport}
+                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
+                  >
+                    <FileText className={`w-4 h-4 ${generatingReport ? 'animate-spin' : ''}`} />
+                    {generatingReport ? 'Compiling Report...' : 'Compile Briefing'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Historical Reports Drawer & Quick Switcher */}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" /> Compiled Reports:
+                  </span>
+                  {reportsList.length === 0 ? (
+                    <span className="text-xs text-slate-400 italic">No reports compiled yet</span>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {reportsList.map((rep) => {
+                        const isCurrent = activeReport?.id === rep.id;
+                        return (
+                          <button
+                            key={rep.id}
+                            onClick={() => loadReportDetails(rep.id)}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${
+                              isCurrent
+                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span className="truncate max-w-[160px]">{rep.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleRefreshRecommendations}
+                  disabled={loadingRecommendations}
+                  className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingRecommendations ? 'animate-spin' : ''}`} />
+                  Refresh Recommendations
+                </button>
+              </div>
+            </div>
+
+            {/* Prescriptive Recommendations Cards Header & Filters */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-indigo-600" />
+                    Prioritized Prescriptive Playbooks
+                    <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {filteredRecommendations.length} {filteredRecommendations.length === 1 ? 'Action' : 'Actions'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Concrete, empirical recommendations ranked by business priority and risk exposure.
+                  </p>
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-slate-500">Priority:</label>
+                    <select
+                      value={recPriorityFilter}
+                      onChange={(e) => setRecPriorityFilter(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="all">All Priorities</option>
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-slate-500">Category:</label>
+                    <select
+                      value={recCategoryFilter}
+                      onChange={(e) => setRecCategoryFilter(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="risk_mitigation">Risk Mitigation</option>
+                      <option value="customer_retention">Customer Retention</option>
+                      <option value="revenue_growth">Revenue Growth</option>
+                      <option value="inventory_optimization">Inventory Optimization</option>
+                      <option value="operational_efficiency">Operational Efficiency</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recommendations Grid */}
+              {filteredRecommendations.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                  <div className="text-sm font-semibold text-slate-700">No Pending Strategic Alerts</div>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                    {recommendations.length > 0
+                      ? 'No recommendations match your current priority and category filter.'
+                      : 'All data integrity invariants and operational metrics are currently stable. Run additional analyses to identify new growth vectors.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {filteredRecommendations.map((rec) => {
+                    const isCritical = rec.priority === 'critical';
+                    const isHigh = rec.priority === 'high';
+                    const isMedium = rec.priority === 'medium';
+                    const isExpanded = expandedRecId === rec.id;
+
+                    let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+                    let icon = <CheckCircle className="w-4 h-4 text-slate-600" />;
+                    if (isCritical) {
+                      badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                      icon = <AlertOctagon className="w-4 h-4 text-rose-600" />;
+                    } else if (isHigh) {
+                      badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                      icon = <AlertTriangle className="w-4 h-4 text-amber-600" />;
+                    } else if (isMedium) {
+                      badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                      icon = <Info className="w-4 h-4 text-blue-600" />;
+                    }
+
+                    const categoryLabels: Record<string, string> = {
+                      risk_mitigation: 'Risk Mitigation',
+                      customer_retention: 'Customer Retention',
+                      revenue_growth: 'Revenue Growth',
+                      inventory_optimization: 'Inventory & Catalog',
+                      operational_efficiency: 'Operations & Scaling',
+                    };
+
+                    return (
+                      <div
+                        key={rec.id}
+                        className={`bg-white rounded-2xl border transition-all p-6 shadow-sm hover:shadow-md flex flex-col justify-between ${
+                          isCritical
+                            ? 'border-rose-200/90'
+                            : isHigh
+                            ? 'border-amber-200/90'
+                            : 'border-slate-200'
+                        }`}
+                      >
+                        <div className="space-y-4">
+                          {/* Priority and Category Tag */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ${badgeColor}`}>
+                              {icon}
+                              {rec.priority} Priority
+                            </span>
+                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full capitalize">
+                              {categoryLabels[rec.category] || rec.category.replace('_', ' ')}
+                            </span>
+                          </div>
+
+                          {/* Recommendation Title */}
+                          <h4 className="text-base font-bold text-slate-900 leading-snug">
+                            {rec.title}
+                          </h4>
+
+                          {/* Impact Highlight Banner */}
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-start gap-2.5">
+                            <span className="text-sm">⚡</span>
+                            <div>
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Estimated Impact</div>
+                              <div className="text-xs text-slate-800 font-medium mt-0.5">{rec.impact_summary}</div>
+                            </div>
+                          </div>
+
+                          {/* Empirical Rationale */}
+                          <div>
+                            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                              Empirical Rationale
+                            </div>
+                            <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                              {rec.rationale}
+                            </p>
+                          </div>
+
+                          {/* Action Plan Steps */}
+                          {rec.action_plan && rec.action_plan.length > 0 && (
+                            <div className="space-y-2 pt-2">
+                              <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                                <span>🎯</span> Recommended Action Steps
+                              </div>
+                              <div className="space-y-1.5">
+                                {rec.action_plan.map((step, sIdx) => (
+                                  <div key={sIdx} className="flex items-start gap-2 text-xs text-slate-800 bg-indigo-50/30 p-2 rounded-lg border border-indigo-100/40">
+                                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
+                                      {sIdx + 1}
+                                    </span>
+                                    <span className="font-medium leading-relaxed">{step}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Evidence Collapsible */}
+                        {rec.evidence && Object.keys(rec.evidence).length > 0 && (
+                          <div className="mt-5 pt-3 border-t border-slate-100">
+                            <button
+                              onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
+                              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                            >
+                              <Database className="w-3 h-3" />
+                              {isExpanded ? 'Hide Data Citations' : 'Inspect Data Citations'}
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                            {isExpanded && (
+                              <div className="mt-2.5 p-3 bg-slate-900 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto border border-slate-800">
+                                <pre>{JSON.stringify(rec.evidence, null, 2)}</pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Compiled Executive Report Viewer */}
+            {activeReport && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* Report Header Bar */}
+                <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-indigo-300 font-medium mb-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Executive Briefing Document
+                      <span>•</span>
+                      <span>{activeReport.content?.generated_at || new Date(activeReport.created_at || '').toLocaleDateString()}</span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                      {activeReport.title}
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Dataset: <span className="font-semibold text-white">{activeReport.content?.dataset_name || dataset?.name}</span>
+                    </p>
+                  </div>
+
+                  {/* Actions & Export toolbar */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* View mode toggle */}
+                    <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-1 flex items-center">
+                      <button
+                        onClick={() => setReportViewMode('document')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          reportViewMode === 'document' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        Document
+                      </button>
+                      <button
+                        onClick={() => setReportViewMode('markdown')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          reportViewMode === 'markdown' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        Markdown
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleCopyMarkdown()}
+                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                      title="Copy full Markdown report to clipboard"
+                    >
+                      {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedReport ? 'Copied' : 'Copy'}
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadReport(activeReport)}
+                      className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-medium transition-colors shadow-sm"
+                      title="Download Markdown Report File"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download (.md)
+                    </button>
+
+                    <button
+                      onClick={() => window.print()}
+                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+                      title="Print or Save as PDF"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Print
+                    </button>
+                  </div>
+                </div>
+
+                {/* Report Body */}
+                <div className="p-6 md:p-8">
+                  {reportViewMode === 'document' ? (
+                    <div className="space-y-8 max-w-5xl mx-auto">
+                      {/* Executive Summary Callout */}
+                      {activeReport.content?.executive_summary && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-3 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                            Executive Briefing & Strategic Overview
+                          </h4>
+                          <div className="space-y-3 text-sm text-slate-700 leading-relaxed">
+                            {activeReport.content.executive_summary.map((para, pIdx) => (
+                              <p key={pIdx} className="font-normal">{para}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* KPI Performance Grid */}
+                      {activeReport.content?.kpis && activeReport.content.kpis.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                            Key Performance Indicators
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {activeReport.content.kpis.map((kpi, kIdx) => (
+                              <div key={kIdx} className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+                                <div className="text-xs text-slate-500 font-medium">{kpi.label}</div>
+                                <div className="text-xl font-bold text-slate-900 mt-1">{kpi.value}</div>
+                                <div className="text-[11px] text-slate-400 mt-0.5">{kpi.detail}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cross-Layer Modules Presence Flags */}
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700">
+                        <span className="font-bold text-indigo-900 uppercase text-[10px] tracking-wider">Synthesized Modules:</span>
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Deterministic Metrics
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> AI Insights
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {activeReport.content?.has_forecast ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />} Time-Series Forecasts
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {activeReport.content?.has_anomalies ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />} Anomaly Risk Audit
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {activeReport.content?.has_segments ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />} Customer & Catalog Segmentation
+                        </span>
+                      </div>
+
+                      {/* Strategic Playbook Summary */}
+                      {activeReport.content?.recommendations && activeReport.content.recommendations.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                            Executive Action Matrix ({activeReport.content.recommendations.length} Items)
+                          </h4>
+                          <div className="space-y-3">
+                            {activeReport.content.recommendations.map((rec, rIdx) => (
+                              <div key={rIdx} className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                                      {rec.priority}
+                                    </span>
+                                    <span className="text-xs text-slate-500 capitalize">
+                                      {rec.category.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm font-bold text-slate-900">{rec.title}</div>
+                                  <div className="text-xs text-slate-600">{rec.impact_summary}</div>
+                                </div>
+                                <div className="text-xs text-indigo-600 font-semibold md:text-right flex-shrink-0">
+                                  {rec.action_plan?.length || 0} Step Action Plan
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Raw Markdown view */
+                    <div className="relative">
+                      <pre className="p-6 bg-slate-900 text-slate-100 rounded-2xl text-xs font-mono overflow-x-auto leading-relaxed max-h-[700px] border border-slate-800">
+                        {activeReport.content?.markdown_content || '# No markdown available'}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
