@@ -1,14 +1,84 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #070b16;
-  --fg: #e6e9f2;
+  --base-black: #000000;
+  --bg: #030305;
+  --fg: #f4f4f6;
+  --cryptox-primary: #ff3c02;
+  --cryptox-secondary: #fa7041;
+  --cryptox-amber: #ffba86;
+  --cryptox-card-bg: #0c0d12;
+  --cryptox-card-border: rgba(255, 255, 255, 0.09);
+  --cryptox-card-hover: rgba(255, 60, 2, 0.35);
+  --cryptox-subtext: #9ca3af;
 }
 
 body {
-  background: radial-gradient(1200px 600px at 20% -10%, #1e1b4b 0%, transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, #0c4a6e 0%, transparent 55%), var(--bg);
+  background-color: var(--base-black);
+  background-image: 
+    radial-gradient(circle at 50% -12%, rgba(255, 60, 2, 0.16) 0%, rgba(250, 112, 65, 0.05) 35%, transparent 65%),
+    radial-gradient(circle at 90% 20%, rgba(255, 60, 2, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 10% 40%, rgba(250, 112, 65, 0.03) 0%, transparent 40%);
+  background-attachment: fixed;
   color: var(--fg);
   min-height: 100vh;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: #ff3c02 !important;
+  color: #ffffff !important;
+}
+
+/* Cryptox Card Stroke Effect */
+.cryptox-card {
+  background: #0c0d12;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cryptox-card:hover {
+  border-color: rgba(255, 60, 2, 0.35);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12), 0 25px 50px -12px rgba(255, 60, 2, 0.15);
+}
+
+/* Cryptox Primary Radiant Glow Button */
+.cryptox-btn-primary {
+  background: linear-gradient(135deg, #ff3c02 0%, #fa7041 50%, #f45b31 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 9999px;
+  box-shadow: 0 0 25px rgba(255, 60, 2, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  transition: all 0.25s ease;
+}
+
+.cryptox-btn-primary:hover {
+  box-shadow: 0 0 35px rgba(255, 60, 2, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.cryptox-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Custom Scrollbar for Cryptox */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #22232a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff3c02;
 }

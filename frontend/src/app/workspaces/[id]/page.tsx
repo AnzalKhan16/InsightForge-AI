@@ -111,26 +111,26 @@ export default function WorkspacePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-black text-[#f4f4f6] flex flex-col font-sans selection:bg-[#ff3c02] selection:text-white">
       <Navbar workspaceId={workspaceId} />
 
       {/* Sub-bar with Breadcrumb & Refresh */}
-      <div className="border-b border-slate-800 bg-slate-950/50 px-6 py-3 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-slate-400">
-          <button onClick={() => router.push('/')} className="hover:text-indigo-400 transition-colors flex items-center gap-1 font-medium">
+      <div className="border-b border-white/10 bg-[#060709] px-6 py-3 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-[#9ca3af]">
+          <button onClick={() => router.push('/')} className="hover:text-[#fa7041] transition-colors flex items-center gap-1 font-medium">
             <ArrowLeft className="w-3.5 h-3.5" /> Dashboard Hub
           </button>
           <span>/</span>
-          <span className="text-slate-200 font-semibold">Workspace Datasets</span>
+          <span className="text-white font-semibold">Workspace Datasets</span>
         </div>
 
         <button
           onClick={() => fetchDatasets(true)}
           disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/80"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#14151b] hover:bg-[#1e1f28] text-slate-300 transition-all border border-white/10"
           title="Refresh datasets status"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#fa7041]' : ''}`} />
           Refresh
         </button>
       </div>
@@ -138,32 +138,32 @@ export default function WorkspacePage() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
         {error && (
-          <div className="bg-rose-950/60 border border-rose-800/80 text-rose-200 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm">
+          <div className="bg-rose-950/40 border border-rose-800 text-rose-200 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm">
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Upload Zone Card */}
-        <section className="bg-slate-800/60 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-xl backdrop-blur-sm">
+        <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-1.5 max-w-xl">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 uppercase tracking-wider">
                 <Sparkles className="w-3 h-3" />
                 Ingest & Process
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-white">Upload New Business Dataset</h2>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <p className="text-sm text-[#9ca3af] leading-relaxed">
                 Import sales ledgers, customer transactions, or inventory logs. The engine deterministically profiles columns, computes distributions, and powers the interactive analytics suite.
               </p>
             </div>
 
             <div className="w-full md:w-auto flex-shrink-0">
               <div className="flex flex-col items-center gap-2">
-                <label className={`cursor-pointer w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all ${
+                <label className={`cursor-pointer w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-semibold text-white shadow-lg transition-all ${
                   uploading 
-                    ? 'bg-slate-700 cursor-not-allowed opacity-80' 
-                    : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 hover:shadow-indigo-500/25 shadow-indigo-600/20 active:scale-98'
+                    ? 'bg-[#181920] cursor-not-allowed opacity-80' 
+                    : 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] shadow-[#ff3c02]/30 active:scale-98'
                 }`}>
                   <Upload className="w-4 h-4" />
                   {uploading ? 'Ingesting File...' : 'Select CSV or Excel File'}
@@ -176,7 +176,7 @@ export default function WorkspacePage() {
                     className="hidden"
                   />
                 </label>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-[#9ca3af]">
                   Supported formats: CSV, XLSX, XLS (Max 50MB)
                 </span>
               </div>
@@ -189,10 +189,10 @@ export default function WorkspacePage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Database className="w-4 h-4 text-indigo-400" />
+                <Database className="w-4 h-4 text-[#fa7041]" />
                 Available Datasets ({datasets.length})
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#9ca3af]">
                 Select any dataset to launch the interactive dashboard, view profiles, or run ML forecasting.
               </p>
             </div>
@@ -209,28 +209,28 @@ export default function WorkspacePage() {
               return (
                 <div 
                   key={dataset.id} 
-                  className="bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between transition-all hover:border-slate-600 hover:shadow-2xl"
+                  className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-6 shadow-xl flex flex-col justify-between transition-all group"
                 >
                   <div className="space-y-4">
                     {/* Card Header */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 text-slate-300 border border-white/10">
                             v{currentVer?.version_number || 1}
                           </span>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
                             {currentVer?.format?.toUpperCase() || 'CSV'}
                           </span>
                         </div>
-                        <h4 className="text-lg font-bold text-white truncate" title={dataset.name}>
+                        <h4 className="text-lg font-bold text-white truncate group-hover:text-[#ffba86] transition-colors" title={dataset.name}>
                           {dataset.name}
                         </h4>
                       </div>
 
                       <button
                         onClick={() => handleDelete(dataset.id)}
-                        className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-700/60 transition-colors"
+                        className="text-slate-400 hover:text-rose-400 p-1.5 rounded-full hover:bg-white/5 transition-colors"
                         title="Delete dataset"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -238,37 +238,37 @@ export default function WorkspacePage() {
                     </div>
 
                     {/* Metadata & Status Badges */}
-                    <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs">
+                    <div className="bg-[#060709] border border-white/10 rounded-2xl p-4 space-y-2.5 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Processing Status</span>
+                        <span className="text-[#9ca3af]">Processing Status</span>
                         {isCompleted && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
                             <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
                         )}
                         {isProcessing && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse">
                             <Clock className="w-3 h-3" /> Processing...
                           </span>
                         )}
                         {isFailed && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
                             <AlertCircle className="w-3 h-3" /> Failed
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-center">
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
                         <div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase">Rows</div>
+                          <div className="text-[10px] font-bold text-[#9ca3af] uppercase">Rows</div>
                           <div className="font-bold text-slate-200 mt-0.5">{meta?.row_count ? meta.row_count.toLocaleString() : '—'}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase">Columns</div>
+                          <div className="text-[10px] font-bold text-[#9ca3af] uppercase">Columns</div>
                           <div className="font-bold text-slate-200 mt-0.5">{meta?.column_count || '—'}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase">File Size</div>
+                          <div className="text-[10px] font-bold text-[#9ca3af] uppercase">File Size</div>
                           <div className="font-bold text-slate-200 mt-0.5">{currentVer?.size_bytes ? `${(currentVer.size_bytes / 1024).toFixed(1)} KB` : '—'}</div>
                         </div>
                       </div>
@@ -281,15 +281,15 @@ export default function WorkspacePage() {
                     <button
                       onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}/analytics`)}
                       disabled={!isCompleted}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-xs font-bold transition-all shadow-md ${
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-bold transition-all shadow-md ${
                         isCompleted
-                          ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-indigo-600/30 active:scale-98 cursor-pointer'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-60'
+                          ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-[#ff3c02]/30 active:scale-98 cursor-pointer'
+                          : 'bg-[#14151b] text-slate-500 border border-white/10 cursor-not-allowed opacity-60'
                       }`}
                     >
-                      <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      <TrendingUp className="w-4 h-4 text-[#ffba86]" />
                       Open Interactive Dashboard
-                      <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-300" />
+                      <ArrowRight className="w-3.5 h-3.5 ml-auto text-slate-200" />
                     </button>
 
                     {/* Secondary Actions */}
@@ -297,18 +297,18 @@ export default function WorkspacePage() {
                       <button
                         onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}`)}
                         disabled={!isCompleted}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-[#14151b] hover:bg-[#1e1f28] text-slate-300 border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Layers className="w-3 h-3 text-indigo-400" />
+                        <Layers className="w-3 h-3 text-[#fa7041]" />
                         Data Profile
                       </button>
 
                       <button
                         onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${dataset.id}/clean`)}
                         disabled={!isCompleted}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-[#14151b] hover:bg-[#1e1f28] text-slate-300 border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ShieldCheck className="w-3 h-3 text-purple-400" />
+                        <ShieldCheck className="w-3 h-3 text-[#ffba86]" />
                         Clean Data
                       </button>
                     </div>
@@ -318,10 +318,10 @@ export default function WorkspacePage() {
             })}
 
             {datasets.length === 0 && !uploading && (
-              <div className="col-span-full bg-slate-800/40 border border-slate-700/60 rounded-3xl p-12 text-center flex flex-col items-center justify-center">
+              <div className="col-span-full bg-[#0c0d12] border border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center">
                 <Database className="w-12 h-12 text-slate-600 mb-3" />
                 <h4 className="text-base font-bold text-slate-300 mb-1">No Datasets Uploaded Yet</h4>
-                <p className="text-xs text-slate-500 max-w-sm mb-4">
+                <p className="text-xs text-[#9ca3af] max-w-sm mb-4">
                   Upload a CSV or Excel transaction file above to automatically generate KPIs, charts, forecasts, and AI insights.
                 </p>
               </div>

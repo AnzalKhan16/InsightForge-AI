@@ -313,130 +313,185 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-black text-[#f4f4f6] flex flex-col font-sans selection:bg-[#ff3c02] selection:text-white">
       <Navbar workspaceId={workspaceId} datasetId={datasetId} />
 
       {/* =====================================================================
-          SECTION 1: HERO & COMPANY PROFILE
+          SECTION 1: HERO & COMPANY PROFILE (CRYPTOX THEME)
           ===================================================================== */}
-      <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/80 bg-gradient-to-b from-slate-900/50 via-slate-950 to-slate-950">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-transparent to-transparent pointer-events-none" />
+      <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-white/10 bg-black">
+        {/* Top ambient radial flame glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#ff3c02]/15 via-[#fa7041]/5 to-transparent pointer-events-none blur-2xl" />
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10 space-y-8 text-center md:text-left">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-3xl space-y-5">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 shadow-sm backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10 space-y-12 text-center md:text-left">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="max-w-3xl space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 shadow-[0_0_20px_rgba(255,60,2,0.15)] backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Next-Gen Enterprise Analytics & Autonomous Intelligence</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                Turn Raw Business Data Into <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-200 bg-clip-text text-transparent">Boardroom Strategy</span>
+                Turn Raw Business Data Into <span className="bg-gradient-to-r from-white via-neutral-100 to-[#ffba86] bg-clip-text text-transparent">Boardroom Strategy</span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
-                <strong>InsightForge AI</strong> is an enterprise decision-intelligence platform built for leaders and analysts. 
-                We combine <strong>deterministic mathematical financial auditing</strong>, <strong>predictive time-series forecasting</strong>, 
-                <strong>anomaly risk audits</strong>, and <strong>customer behavioral segmentation</strong> — guaranteed 100% free of artificial AI hallucinations.
+              <p className="text-base sm:text-lg text-[#9ca3af] leading-relaxed font-normal">
+                <strong className="text-white">InsightForge AI</strong> is an enterprise decision-intelligence platform built for leaders and analysts. 
+                We combine <strong className="text-white">deterministic mathematical financial auditing</strong>, <strong className="text-white">predictive time-series forecasting</strong>, 
+                <strong className="text-white">anomaly risk audits</strong>, and <strong className="text-white">customer behavioral segmentation</strong> — guaranteed 100% free of artificial AI hallucinations.
               </p>
 
               <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-semibold">
                 <button
                   onClick={() => scrollToSection('upload-section')}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all active:scale-98"
+                  className="px-7 py-3.5 rounded-full bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white font-bold shadow-lg shadow-[#ff3c02]/30 flex items-center gap-2.5 transition-all active:scale-98"
                 >
                   <Upload className="w-4 h-4" />
-                  Upload Your Dataset
+                  <span>Upload Your Dataset</span>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white">
+                    <ArrowRight className="w-3 h-3" />
+                  </div>
                 </button>
                 <button
                   onClick={() => scrollToSection('dashboard-showcase')}
-                  className="px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 font-bold flex items-center gap-2 transition-all shadow-sm"
+                  className="px-7 py-3.5 rounded-full bg-[#121318] hover:bg-[#1a1b22] text-white border border-white/15 hover:border-white/25 font-bold flex items-center gap-2.5 transition-all shadow-sm"
                 >
-                  <BarChart3 className="w-4 h-4 text-indigo-400" />
-                  Explore Live Demo Dashboard
+                  <BarChart3 className="w-4 h-4 text-[#fa7041]" />
+                  <span>Explore Live Demo Dashboard</span>
                 </button>
               </div>
             </div>
 
-            {/* Organization Highlights Card */}
-            <div className="w-full md:w-96 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
-              <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
+            {/* Organization Profile Card - Obsidian Glassmorphism */}
+            <div className="w-full md:w-96 bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-7 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.9)] backdrop-blur-xl space-y-4 hover:border-[#ff3c02]/30 transition-all">
+              <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                <div className="w-10 h-10 rounded-2xl bg-[#ff3c02]/15 border border-[#ff3c02]/30 flex items-center justify-center text-[#fa7041] font-bold">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Company Profile</h3>
-                  <p className="text-[11px] text-slate-400">InsightForge Technologies Inc.</p>
+                  <p className="text-[11px] text-[#9ca3af]">InsightForge Technologies Inc.</p>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3.5 text-xs">
                 <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div className="w-4 h-4 rounded-full bg-[#ff3c02]/20 border border-[#ff3c02]/40 flex items-center justify-center text-[#fa7041] flex-shrink-0 mt-0.5">
+                    <Check className="w-2.5 h-2.5" />
+                  </div>
                   <div>
                     <span className="font-bold text-white">Deterministic Accuracy:</span>
-                    <p className="text-slate-400 text-[11px]">Ledger aggregations computed to exact cents from raw CSV/Excel transactions.</p>
+                    <p className="text-[#9ca3af] text-[11px]">Ledger aggregations computed to exact cents from raw CSV/Excel transactions.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div className="w-4 h-4 rounded-full bg-[#ff3c02]/20 border border-[#ff3c02]/40 flex items-center justify-center text-[#fa7041] flex-shrink-0 mt-0.5">
+                    <Check className="w-2.5 h-2.5" />
+                  </div>
                   <div>
                     <span className="font-bold text-white">Statistical Predictive ML:</span>
-                    <p className="text-slate-400 text-[11px]">Holt-Linear & ARIMA algorithms projecting 6-month forward demand horizons.</p>
+                    <p className="text-[#9ca3af] text-[11px]">Holt-Linear & ARIMA algorithms projecting 6-month forward demand horizons.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div className="w-4 h-4 rounded-full bg-[#ff3c02]/20 border border-[#ff3c02]/40 flex items-center justify-center text-[#fa7041] flex-shrink-0 mt-0.5">
+                    <Check className="w-2.5 h-2.5" />
+                  </div>
                   <div>
                     <span className="font-bold text-white">Autonomous Anomaly Audits:</span>
-                    <p className="text-slate-400 text-[11px]">Instant isolation of negative balances, margin leaks, and transaction spikes.</p>
+                    <p className="text-[#9ca3af] text-[11px]">Instant isolation of negative balances, margin leaks, and transaction spikes.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div className="w-4 h-4 rounded-full bg-[#ff3c02]/20 border border-[#ff3c02]/40 flex items-center justify-center text-[#fa7041] flex-shrink-0 mt-0.5">
+                    <Check className="w-2.5 h-2.5" />
+                  </div>
                   <div>
                     <span className="font-bold text-white">Boardroom Briefings:</span>
-                    <p className="text-slate-400 text-[11px]">Automated executive documents ready for board distribution in HTML and PDF.</p>
+                    <p className="text-[#9ca3af] text-[11px]">Automated executive documents ready for board distribution in HTML and PDF.</p>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* 4 Cryptox Value Pillar Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-4">
+            <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-6 transition-all shadow-xl group hover:-translate-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-[#ff3c02]/15 border border-[#ff3c02]/30 flex items-center justify-center text-[#fa7041] mb-4 group-hover:scale-110 transition-transform">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-sm mb-1.5 group-hover:text-[#ffba86] transition-colors">Deterministic Ledger</h4>
+              <p className="text-xs text-[#9ca3af] leading-relaxed">
+                Zero AI hallucinations. Every aggregation matches banking standards down to exact decimal cents.
+              </p>
+            </div>
+
+            <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-6 transition-all shadow-xl group hover:-translate-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-[#fa7041]/15 border border-[#fa7041]/30 flex items-center justify-center text-[#fa7041] mb-4 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-sm mb-1.5 group-hover:text-[#ffba86] transition-colors">Predictive ML Curves</h4>
+              <p className="text-xs text-[#9ca3af] leading-relaxed">
+                Holt-Linear trends with 80% & 95% statistical confidence cones over expanding time horizons.
+              </p>
+            </div>
+
+            <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-6 transition-all shadow-xl group hover:-translate-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-[#ffba86]/15 border border-[#ffba86]/30 flex items-center justify-center text-[#ffba86] mb-4 group-hover:scale-110 transition-transform">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-sm mb-1.5 group-hover:text-[#ffba86] transition-colors">Statistical Audits</h4>
+              <p className="text-xs text-[#9ca3af] leading-relaxed">
+                Automated detection of inverted transactions, Tukey IQR outliers, and anomalous revenue spikes.
+              </p>
+            </div>
+
+            <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-6 transition-all shadow-xl group hover:-translate-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-[#ff3c02]/15 border border-[#ff3c02]/30 flex items-center justify-center text-[#fa7041] mb-4 group-hover:scale-110 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-sm mb-1.5 group-hover:text-[#ffba86] transition-colors">RFM Behavioral Cohorts</h4>
+              <p className="text-xs text-[#9ca3af] leading-relaxed">
+                Recency, Frequency, and Monetary grouping to retain corporate VIPs and mitigate churn.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* =====================================================================
-          SECTION 2: UPLOAD DATASET
+          SECTION 2: UPLOAD DATASET (CRYPTOX THEME)
           ===================================================================== */}
-      <section id="upload-section" className="py-12 md:py-16 bg-slate-950 border-b border-slate-800/80">
+      <section id="upload-section" className="py-12 md:py-16 bg-[#040507] border-b border-white/10 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
               <Upload className="w-3.5 h-3.5" />
               <span>Direct Data Ingestion</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
               Upload Your Dataset for Instant Analysis
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-[#9ca3af]">
               Drop any corporate CSV or Excel spreadsheet. Our pipeline immediately validates schemas, cleans anomalies, profiles dimensions, and generates executive briefings.
             </p>
           </div>
 
-          <form onSubmit={handleUploadSubmit} className="max-w-3xl mx-auto bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <form onSubmit={handleUploadSubmit} className="max-w-3xl mx-auto bg-[#0c0d12] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.9)] space-y-6">
             {/* Drag & Drop Zone */}
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+              className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all ${
                 isDragging 
-                  ? 'border-indigo-500 bg-indigo-500/10' 
-                  : 'border-slate-700 hover:border-slate-500 bg-slate-950/60 hover:bg-slate-950/90'
+                  ? 'border-[#ff3c02] bg-[#ff3c02]/10' 
+                  : 'border-white/15 hover:border-[#ff3c02]/50 bg-[#060709] hover:bg-[#090a0f]'
               }`}
             >
               <input 
@@ -447,20 +502,20 @@ export default function HomePage() {
                 className="hidden" 
               />
               <div className="flex flex-col items-center justify-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-md">
+                <div className="w-14 h-14 rounded-2xl bg-[#ff3c02]/15 border border-[#ff3c02]/30 flex items-center justify-center text-[#fa7041] shadow-lg shadow-[#ff3c02]/20">
                   <FileSpreadsheet className="w-7 h-7" />
                 </div>
                 {uploadFile ? (
                   <div>
                     <p className="text-sm font-bold text-white">{uploadFile.name}</p>
-                    <p className="text-xs text-indigo-400 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB — Ready to analyze</p>
+                    <p className="text-xs text-[#fa7041] mt-1">{(uploadFile.size / 1024).toFixed(1)} KB — Ready to analyze</p>
                   </div>
                 ) : (
                   <div>
                     <p className="text-sm font-semibold text-slate-200">
-                      Drag & drop your <span className="text-indigo-400 font-bold">.CSV or .XLSX</span> file here
+                      Drag & drop your <span className="text-[#fa7041] font-bold">.CSV or .XLSX</span> file here
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">Or click to browse from your workstation (up to 50MB)</p>
+                    <p className="text-xs text-[#9ca3af] mt-1">Or click to browse from your workstation (up to 50MB)</p>
                   </div>
                 )}
               </div>
@@ -475,7 +530,7 @@ export default function HomePage() {
                   placeholder="e.g. Q4 Sales Ledger"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#ff3c02] focus:ring-1 focus:ring-[#ff3c02]"
                 />
               </div>
 
@@ -483,7 +538,7 @@ export default function HomePage() {
                 <button
                   type="submit"
                   disabled={!uploadFile || uploading}
-                  className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-4 rounded-full font-bold text-xs bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-lg shadow-[#ff3c02]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
                   {uploading ? (
                     <>
@@ -515,12 +570,12 @@ export default function HomePage() {
             )}
 
             {/* Quick Demo Jump */}
-            <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+            <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[#9ca3af] gap-2">
               <span>Don't have a file ready? Explore our verified corporate dataset:</span>
               <button
                 type="button"
                 onClick={() => scrollToSection('dashboard-showcase')}
-                className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 group"
+                className="text-[#fa7041] hover:text-[#ffba86] font-bold flex items-center gap-1 group"
               >
                 <span>Jump to Live Retail 2023 Showcase</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -531,24 +586,24 @@ export default function HomePage() {
       </section>
 
       {/* =====================================================================
-          SECTION 3: LIVE ANALYTICS SHOWCASE & DASHBOARD HUB
+          SECTION 3: LIVE ANALYTICS SHOWCASE & DASHBOARD HUB (CRYPTOX THEME)
           ===================================================================== */}
       <main id="dashboard-showcase" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
         
         {/* Showcase Header Banner */}
-        <section className="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 shadow-2xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 font-semibold">
                 <CheckCircle2 className="w-3 h-3" />
                 Live Verified Dataset
               </span>
-              <span className="text-slate-400">• Reporting Period: Jan 15, 2023 – Dec 28, 2023</span>
+              <span className="text-[#9ca3af]">• Reporting Period: Jan 15, 2023 – Dec 28, 2023</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               {datasetName}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+            <p className="text-xs sm:text-sm text-[#9ca3af] max-w-2xl">
               Deterministic transaction metrics, AI strategic interpretations, automated time-series forecasting, and anomaly risk audits.
             </p>
           </div>
@@ -556,14 +611,14 @@ export default function HomePage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => handleDownloadReport('html')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all active:scale-98"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3c02] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-lg shadow-[#ff3c02]/30 transition-all active:scale-98"
             >
               <Download className="w-3.5 h-3.5" />
               Export Executive HTML
             </button>
             <button
               onClick={() => handleDownloadReport('md')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all hover:border-slate-600"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-bold bg-[#14151b] hover:bg-[#1e1f28] text-slate-200 border border-white/15 transition-all hover:border-white/25"
             >
               <FileText className="w-3.5 h-3.5" />
               Download Markdown
@@ -571,78 +626,78 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Primary KPI Cards */}
+        {/* Primary KPI Cards - Cryptox Obsidian & Flame */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-5 shadow-xl backdrop-blur-xl relative overflow-hidden group transition-all">
             <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
-              <span className="font-bold tracking-wider uppercase text-[11px]">Total Revenue</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <span className="font-bold tracking-wider uppercase text-[11px] text-[#9ca3af]">Total Revenue</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 flex items-center justify-center">
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               ${metrics.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#fa7041]">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>+237.2% annual growth trajectory</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-5 shadow-xl backdrop-blur-xl relative overflow-hidden group transition-all">
             <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
-              <span className="font-bold tracking-wider uppercase text-[11px]">Processed Volume</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <span className="font-bold tracking-wider uppercase text-[11px] text-[#9ca3af]">Processed Volume</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#fa7041]/15 text-[#fa7041] border border-[#fa7041]/30 flex items-center justify-center">
                 <ShoppingCart className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {metrics.total_orders} <span className="text-sm font-normal text-slate-400">orders</span>
             </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#9ca3af]">
               <span>100% verified ledger records</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-5 shadow-xl backdrop-blur-xl relative overflow-hidden group transition-all">
             <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
-              <span className="font-bold tracking-wider uppercase text-[11px]">Avg Order Value (AOV)</span>
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+              <span className="font-bold tracking-wider uppercase text-[11px] text-[#9ca3af]">Avg Order Value (AOV)</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#ffba86]/15 text-[#ffba86] border border-[#ffba86]/30 flex items-center justify-center">
                 <Activity className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               ${metrics.avg_order_value.toFixed(2)}
             </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#9ca3af]">
               <span>Healthy corporate basket size</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="bg-[#0c0d12] border border-white/10 hover:border-[#ff3c02]/40 rounded-3xl p-5 shadow-xl backdrop-blur-xl relative overflow-hidden group transition-all">
             <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
-              <span className="font-bold tracking-wider uppercase text-[11px]">Active Entities</span>
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+              <span className="font-bold tracking-wider uppercase text-[11px] text-[#9ca3af]">Active Entities</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {metrics.unique_customers} <span className="text-sm font-normal text-slate-400">categories</span>
             </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#9ca3af]">
               <span>Across 4 global operating regions</span>
             </div>
           </div>
         </div>
 
-        {/* 6 Interactive Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800 text-xs font-semibold">
+        {/* 6 Interactive Navigation Tabs - Cryptox Pill Navigation */}
+        <div className="p-1.5 rounded-full bg-[#0c0d12] border border-white/10 flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
           <button
             onClick={() => setActiveTab('charts')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'charts' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -651,10 +706,10 @@ export default function HomePage() {
 
           <button
             onClick={() => setActiveTab('insights')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'insights' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -663,10 +718,10 @@ export default function HomePage() {
 
           <button
             onClick={() => setActiveTab('forecast')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'forecast' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Clock className="w-4 h-4" />
@@ -675,10 +730,10 @@ export default function HomePage() {
 
           <button
             onClick={() => setActiveTab('anomalies')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'anomalies' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
@@ -687,10 +742,10 @@ export default function HomePage() {
 
           <button
             onClick={() => setActiveTab('segments')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'segments' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -699,10 +754,10 @@ export default function HomePage() {
 
           <button
             onClick={() => setActiveTab('report')}
-            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'report' 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -710,19 +765,19 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* TAB 1: VISUAL CHARTS & TRENDS */}
+        {/* TAB 1: VISUAL CHARTS & TRENDS (CRYPTOX RADIANT STYLING) */}
         {activeTab === 'charts' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="lg:col-span-2 bg-[#0c0d12] border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-indigo-400" />
+                    <TrendingUp className="w-4 h-4 text-[#fa7041]" />
                     Revenue Trajectory Over Time
                   </h3>
-                  <p className="text-xs text-slate-400">Monthly chronological volume aggregated across reporting dates</p>
+                  <p className="text-xs text-[#9ca3af]">Monthly chronological volume aggregated across reporting dates</p>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">2023 Ledger</span>
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[#ffba86]">2023 Ledger</span>
               </div>
 
               <div className="h-64 sm:h-72 w-full pt-4">
@@ -730,40 +785,40 @@ export default function HomePage() {
                   <AreaChart data={timeSeries}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#ff3c02" stopOpacity={0.45}/>
+                        <stop offset="95%" stopColor="#ff3c02" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2029" />
+                    <XAxis dataKey="date" stroke="#6b7280" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#6b7280" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val/1000}k`} />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                      contentStyle={{ backgroundColor: '#0c0d12', borderColor: '#2b2c37', borderRadius: '16px', color: '#fff', fontSize: '12px' }}
                       formatter={(val: any) => [`$${Number(val).toLocaleString()}`, 'Revenue']}
                     />
-                    <Area type="monotone" dataKey="value" stroke="#818cf8" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                    <Area type="monotone" dataKey="value" stroke="#ff3c02" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+                <Layers className="w-4 h-4 text-[#fa7041]" />
                 Category Revenue Share
               </h3>
-              <p className="text-xs text-slate-400">Total volume contribution by product line</p>
+              <p className="text-xs text-[#9ca3af]">Total volume contribution by product line</p>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3.5 pt-2">
                 {categoryBreakdown.map((cat, idx) => (
-                  <div key={idx} className="space-y-1">
+                  <div key={idx} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-semibold">
                       <span className="text-slate-300">{cat.label}</span>
                       <span className="text-white">${cat.value.toLocaleString()} ({cat.pct}%)</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-[#181920] overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" 
+                        className="h-full bg-gradient-to-r from-[#ff3c02] to-[#fa7041] rounded-full" 
                         style={{ width: `${cat.pct}%` }}
                       />
                     </div>
@@ -776,25 +831,25 @@ export default function HomePage() {
 
         {/* TAB 2: AI STRATEGIC INSIGHTS */}
         {activeTab === 'insights' && (
-          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+          <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
+                <Sparkles className="w-4 h-4 text-[#fa7041]" />
                 Synthesized Executive Findings
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#9ca3af]">
                 Ground-truth statistical facts interpreted by deterministic business rules.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {insights.map((ins, idx) => (
-                <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                <div key={idx} className="bg-[#060709] border border-white/10 hover:border-[#ff3c02]/30 transition-all rounded-3xl p-5 space-y-3 flex flex-col justify-between">
                   <div className="space-y-2">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      ins.severity === 'opportunity' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      ins.severity === 'warning' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                      'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                    <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      ins.severity === 'opportunity' ? 'bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30' :
+                      ins.severity === 'warning' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                      'bg-white/10 text-slate-300 border border-white/15'
                     }`}>
                       {ins.severity}
                     </span>
@@ -802,11 +857,11 @@ export default function HomePage() {
                     <p className="text-xs text-slate-300 leading-relaxed">{ins.body}</p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80 space-y-1.5 text-[11px]">
-                    <div className="font-bold text-indigo-400 uppercase tracking-wider text-[10px]">Empirical Facts:</div>
+                  <div className="pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
+                    <div className="font-bold text-[#fa7041] uppercase tracking-wider text-[10px]">Empirical Facts:</div>
                     {ins.facts.map((fact, fIdx) => (
-                      <div key={fIdx} className="text-slate-400 flex items-start gap-1.5">
-                        <span className="text-indigo-400 font-bold">•</span>
+                      <div key={fIdx} className="text-[#9ca3af] flex items-start gap-1.5">
+                        <span className="text-[#ff3c02] font-bold">•</span>
                         <span>{fact}</span>
                       </div>
                     ))}
@@ -819,19 +874,19 @@ export default function HomePage() {
 
         {/* TAB 3: PREDICTIVE FORECASTING */}
         {activeTab === 'forecast' && (
-          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-400" />
+                  <Clock className="w-4 h-4 text-[#fa7041]" />
                   Forward-Looking Demand Projections
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#9ca3af]">
                   Model algorithm selection evaluated via out-of-sample backtesting (Holt-Linear RMSE: $1,240.50).
                 </p>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold">
+                <span className="px-3.5 py-1 rounded-full bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 font-bold">
                   Model: Holt Linear Trend
                 </span>
               </div>
@@ -840,22 +895,22 @@ export default function HomePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-4">Period</th>
-                    <th className="py-3 px-4">Projected Month</th>
-                    <th className="py-3 px-4">Baseline Forecast</th>
-                    <th className="py-3 px-4">80% Confidence Range</th>
-                    <th className="py-3 px-4">95% Confidence Range</th>
+                  <tr className="border-b border-white/10 text-[#9ca3af] uppercase text-[10px] tracking-wider">
+                    <th className="py-3.5 px-4">Period</th>
+                    <th className="py-3.5 px-4">Projected Month</th>
+                    <th className="py-3.5 px-4">Baseline Forecast</th>
+                    <th className="py-3.5 px-4">80% Confidence Range</th>
+                    <th className="py-3.5 px-4">95% Confidence Range</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-white/5">
                   {forecastPoints.map((pt, idx) => (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-indigo-400">{pt.period}</td>
-                      <td className="py-3 px-4 font-medium text-slate-200">{pt.date}</td>
-                      <td className="py-3 px-4 font-bold text-white">${pt.forecast.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="py-3 px-4 text-emerald-400 font-mono">${pt.lower.toLocaleString()} – ${pt.upper.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-slate-400 font-mono">${(pt.lower * 0.95).toFixed(0)} – ${(pt.upper * 1.05).toFixed(0)}</td>
+                    <tr key={idx} className="hover:bg-white/5 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-[#fa7041]">{pt.period}</td>
+                      <td className="py-3.5 px-4 font-medium text-slate-200">{pt.date}</td>
+                      <td className="py-3.5 px-4 font-bold text-white">${pt.forecast.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="py-3.5 px-4 text-[#ffba86] font-mono">${pt.lower.toLocaleString()} – ${pt.upper.toLocaleString()}</td>
+                      <td className="py-3.5 px-4 text-[#9ca3af] font-mono">${(pt.lower * 0.95).toFixed(0)} – ${(pt.upper * 1.05).toFixed(0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -866,24 +921,24 @@ export default function HomePage() {
 
         {/* TAB 4: ANOMALY AUDIT */}
         {activeTab === 'anomalies' && (
-          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+          <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-rose-400" />
                 Data Integrity & Anomaly Risk Audit
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#9ca3af]">
                 Audited against Tukey IQR fences, standard deviation bounds, and unsupervised Isolation Forest.
               </p>
             </div>
 
             <div className="space-y-4">
               {anomalies.map((anom, idx) => (
-                <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div key={idx} className="bg-[#060709] border border-white/10 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        anom.severity === 'critical' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                      <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        anom.severity === 'critical' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                       }`}>
                         {anom.severity}
                       </span>
@@ -911,30 +966,30 @@ export default function HomePage() {
 
         {/* TAB 5: SEGMENTATION */}
         {activeTab === 'segments' && (
-          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+          <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-violet-400" />
+                <Users className="w-4 h-4 text-[#fa7041]" />
                 Customer RFM & Behavioral Segmentation
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#9ca3af]">
                 Classified across Recency, Frequency, and Monetary dimensions to identify high-value drivers and churn risks.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {segments.map((seg, idx) => (
-                <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div key={idx} className="bg-[#060709] border border-white/10 hover:border-[#ff3c02]/30 transition-all rounded-3xl p-6 space-y-3.5">
                   <div>
                     <h4 className="font-bold text-white text-base">{seg.label}</h4>
-                    <p className="text-xs text-slate-400">{seg.members} Accounts ({seg.pctMembers}%)</p>
+                    <p className="text-xs text-[#9ca3af]">{seg.members} Accounts ({seg.pctMembers}%)</p>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-emerald-400">${seg.monetary.toLocaleString()}</div>
+                    <div className="text-2xl font-extrabold text-[#fa7041]">${seg.monetary.toLocaleString()}</div>
                     <div className="text-[11px] text-slate-500">{seg.pctMonetary}% of total revenue</div>
                   </div>
-                  <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-300">
-                    <span className="font-bold text-indigo-400">Strategy:</span> {seg.action}
+                  <div className="pt-3 border-t border-white/10 text-[11px] text-slate-300">
+                    <span className="font-bold text-[#ffba86]">Strategy:</span> {seg.action}
                   </div>
                 </div>
               ))}
@@ -944,51 +999,51 @@ export default function HomePage() {
 
         {/* TAB 6: EXECUTIVE BRIEFING */}
         {activeTab === 'report' && (
-          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <section className="bg-[#0c0d12] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <FileText className="w-4 h-4 text-[#fa7041]" />
                   Executive Strategic Briefing Document
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#9ca3af]">
                   Ready for boardroom presentation, PDF print, and executive distribution.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => handleDownloadReport('html')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition-all"
+                  className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3c02] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-md shadow-[#ff3c02]/30 transition-all"
                 >
                   Download .HTML
                 </button>
                 <button
                   onClick={() => handleDownloadReport('md')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+                  className="px-4 py-2 rounded-full text-xs font-bold bg-[#14151b] hover:bg-[#1e1f28] text-slate-200 border border-white/15 transition-all"
                 >
                   Download .MD
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+                  className="px-4 py-2 rounded-full text-xs font-bold bg-[#14151b] hover:bg-[#1e1f28] text-slate-200 border border-white/15 transition-all"
                 >
                   Print / PDF
                 </button>
               </div>
             </div>
 
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 space-y-6 text-sm text-slate-300 leading-relaxed max-w-4xl">
+            <div className="bg-[#060709] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 text-sm text-slate-300 leading-relaxed max-w-4xl">
               <div>
                 <h4 className="text-base font-bold text-white mb-2">Executive Summary</h4>
                 <p>
-                  This briefing synthesizes operational health and financial trajectory for <strong>{datasetName}</strong>.
+                  This briefing synthesizes operational health and financial trajectory for <strong className="text-white">{datasetName}</strong>.
                   Ledger analysis confirms solid operational resilience with cumulative revenue reaching $77,772.70 across 100 transactions, averaging $777.73 per order.
                 </p>
               </div>
 
               <div>
                 <h4 className="text-base font-bold text-white mb-2">Key Strategic Findings</h4>
-                <ul className="list-disc list-inside space-y-1 text-xs text-slate-300">
+                <ul className="list-disc list-inside space-y-1.5 text-xs text-slate-300">
                   <li>Top product category (Electronics) accounts for 31.9% ($24,850.00) of gross sales volume.</li>
                   <li>November 2023 generated peak monthly demand of $12,623.51 before tapering to historical baseline.</li>
                   <li>Out-of-sample time-series models project steady 6-month growth trajectory averaging $9,800/month.</li>
@@ -996,9 +1051,9 @@ export default function HomePage() {
                 </ul>
               </div>
 
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs space-y-2">
-                <div className="font-bold text-indigo-400 uppercase text-[10px] tracking-wider">Methodology & Disclosures</div>
-                <p className="text-slate-400">
+              <div className="p-4 bg-[#0c0d12] border border-white/10 rounded-2xl text-xs space-y-2">
+                <div className="font-bold text-[#fa7041] uppercase text-[10px] tracking-wider">Methodology & Disclosures</div>
+                <p className="text-[#9ca3af]">
                   All mathematical metrics are computed deterministically without artificial LLM math. Forecast confidence intervals expand over horizons reflecting standard statistical entropy.
                 </p>
               </div>
@@ -1009,28 +1064,28 @@ export default function HomePage() {
       </main>
 
       {/* =====================================================================
-          SECTION 4: FOOTER
+          SECTION 4: FOOTER (CRYPTOX THEME)
           ===================================================================== */}
-      <footer className="mt-16 border-t border-slate-800/80 bg-slate-950 py-10 text-xs text-slate-500">
+      <footer className="mt-16 border-t border-white/10 bg-black py-12 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#ff3c02] to-[#fa7041] text-white flex items-center justify-center font-bold text-xs shadow-md shadow-[#ff3c02]/30">
               IF
             </div>
             <div>
-              <span className="font-bold text-slate-300 text-sm">InsightForge AI</span>
-              <p className="text-[11px] text-slate-500">Autonomous Enterprise Business Intelligence & Grounded Strategy</p>
+              <span className="font-bold text-white text-sm">InsightForge AI</span>
+              <p className="text-[11px] text-[#9ca3af]">Autonomous Enterprise Business Intelligence & Grounded Strategy</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-[11px] text-slate-400">
+          <div className="flex flex-wrap items-center gap-6 text-[11px] text-[#9ca3af]">
             <span>SOC2 Type II Aligned</span>
             <span>Deterministic Math Engine</span>
             <span>Non-Root Security Context</span>
             <span>REST API v1</span>
           </div>
 
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-[#9ca3af]">
             &copy; {new Date().getFullYear()} InsightForge Technologies Inc. All rights reserved.
           </div>
         </div>

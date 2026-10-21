@@ -98,31 +98,31 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 md:p-8 overflow-hidden text-slate-100"
+        className="relative w-full max-w-md bg-[#0c0d12] border border-white/10 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-6 md:p-8 overflow-hidden text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Subtle decorative glow */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#ff3c02]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-[#fa7041]/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6 relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/30 text-xs">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#ff3c02] to-[#fa7041] flex items-center justify-center font-bold text-white shadow-md shadow-[#ff3c02]/30 text-xs">
               IF
             </div>
             <div>
               <h3 className="font-bold text-white text-base">
                 {mode === 'login' ? 'Sign in to InsightForge' : 'Create an Account'}
               </h3>
-              <p className="text-xs text-slate-400">AI-Powered Business Intelligence</p>
+              <p className="text-xs text-[#9ca3af]">AI-Powered Business Intelligence</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -134,21 +134,21 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
             type="button"
             onClick={handleDemoLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-950/40 transition-all active:scale-98"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-xs font-bold bg-[#171821] hover:bg-[#20222e] text-[#ffba86] border border-[#ff3c02]/30 shadow-md shadow-black/40 transition-all active:scale-98"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5 text-[#fa7041]" />
             1-Click Demo Login (Preloaded Data)
           </button>
           <div className="relative flex items-center justify-center my-4">
-            <div className="border-t border-slate-800 w-full" />
-            <span className="bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+            <div className="border-t border-white/10 w-full" />
+            <span className="bg-[#0c0d12] px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
               Or with credentials
             </span>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-2xl bg-rose-950/40 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
             <Lock className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -166,7 +166,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
                   placeholder="Jane Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#060709] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#ff3c02] focus:ring-1 focus:ring-[#ff3c02] transition-all"
                   required
                 />
               </div>
@@ -182,7 +182,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
                 placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-[#060709] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#ff3c02] focus:ring-1 focus:ring-[#ff3c02] transition-all"
                 required
               />
             </div>
@@ -197,7 +197,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-[#060709] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#ff3c02] focus:ring-1 focus:ring-[#ff3c02] transition-all"
                 required
               />
             </div>
@@ -206,7 +206,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 mt-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-950/40 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+            className="w-full py-2.5 px-4 mt-2 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-lg shadow-[#ff3c02]/30 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
           >
             {loading ? (
               <span className="animate-pulse">Authenticating...</span>
@@ -226,7 +226,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
               Don&apos;t have an account?{' '}
               <button 
                 onClick={() => { setMode('register'); setError(''); }} 
-                className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-2 ml-1"
+                className="text-[#fa7041] hover:text-[#ffba86] font-semibold underline underline-offset-2 ml-1"
               >
                 Sign up
               </button>
@@ -236,7 +236,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onSu
               Already have an account?{' '}
               <button 
                 onClick={() => { setMode('login'); setError(''); }} 
-                className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-2 ml-1"
+                className="text-[#fa7041] hover:text-[#ffba86] font-semibold underline underline-offset-2 ml-1"
               >
                 Sign in
               </button>

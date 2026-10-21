@@ -17,7 +17,7 @@ import {
   FileText, Download, Copy, Printer, CheckCircle, Target, Clock, ArrowRight, ExternalLink
 } from 'lucide-react';
 
-const COLORS = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+const COLORS = ['#ff3c02', '#fa7041', '#f45b31', '#ffba86', '#e04318', '#ffa266'];
 
 interface RecommendationItem {
   id: string;
@@ -800,23 +800,23 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-screen bg-black text-[#f4f4f6] font-sans flex flex-col selection:bg-[#ff3c02] selection:text-white">
       <Navbar workspaceId={workspaceId} datasetId={datasetId} />
       <div className="flex-1 p-6 md:p-10">
       {/* Header */}
-      <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+      <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b border-white/10 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-2 text-sm text-slate-500">
-            <button onClick={() => router.push(`/workspaces/${workspaceId}`)} className="hover:text-indigo-600 transition-colors">Datasets</button>
+          <div className="flex items-center gap-2 mb-2 text-sm text-[#9ca3af]">
+            <button onClick={() => router.push(`/workspaces/${workspaceId}`)} className="hover:text-[#fa7041] transition-colors">Datasets</button>
             <span>/</span>
-            <button onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}`)} className="hover:text-indigo-600 truncate max-w-[200px] transition-colors">{dataset?.name}</button>
+            <button onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}`)} className="hover:text-[#fa7041] truncate max-w-[200px] transition-colors">{dataset?.name}</button>
             <span>/</span>
-            <span className="font-semibold text-slate-700">Business Intelligence</span>
+            <span className="font-semibold text-white">Business Intelligence</span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Analytics & AI Insights</h1>
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" /> Phase 9 Grounded AI
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">Analytics & AI Insights</h1>
+            <span className="bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Grounded Strategic Engine
             </span>
           </div>
         </div>
@@ -826,47 +826,47 @@ export default function AnalyticsPage() {
           <button 
             onClick={generateInsights}
             disabled={submittingInsights}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-5 py-2.5 rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md shadow-indigo-200 disabled:opacity-50 font-medium text-sm"
+            className="flex items-center gap-2 bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white px-6 py-2.5 rounded-full transition-all shadow-lg shadow-[#ff3c02]/30 disabled:opacity-50 font-bold text-xs"
           >
-            <Sparkles className={`w-4 h-4 ${submittingInsights ? 'animate-spin text-indigo-200' : 'text-indigo-200'}`} />
+            <Sparkles className={`w-4 h-4 ${submittingInsights ? 'animate-spin text-white' : 'text-white'}`} />
             {submittingInsights ? 'Synthesizing Grounded Insights...' : 'Generate AI Insights'}
           </button>
           
           <button 
             onClick={runAnalytics}
             disabled={submittingAnalysis}
-            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 font-medium text-sm"
+            className="flex items-center gap-2 bg-[#14151b] border border-white/10 text-slate-200 px-5 py-2.5 rounded-full hover:bg-[#1e1f28] transition-colors shadow-sm disabled:opacity-50 font-semibold text-xs"
           >
-            <RefreshCw className={`w-4 h-4 ${submittingAnalysis ? 'animate-spin text-indigo-600' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${submittingAnalysis ? 'animate-spin text-[#fa7041]' : ''}`} />
             {submittingAnalysis ? 'Refreshing...' : 'Recalculate Metrics'}
           </button>
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200 mb-8 pb-3">
-        <div className="flex items-center gap-2">
+      {/* Navigation Tabs - Cryptox Pill Navigation */}
+      <div className="flex flex-wrap items-center justify-between border-b border-white/10 mb-8 pb-4 gap-4">
+        <div className="p-1.5 rounded-full bg-[#0c0d12] border border-white/10 flex flex-wrap items-center gap-1.5 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('insights')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'insights' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Sparkles className="w-4 h-4" />
             Executive AI Insights
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'insights' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+            <span className={`text-[10px] px-2 py-0.2 rounded-full ${activeTab === 'insights' ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'}`}>
               {insights.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('nlq')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'nlq' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -875,10 +875,10 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('forecast')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'forecast' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
@@ -887,16 +887,16 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('anomalies')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'anomalies' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <AlertOctagon className="w-4 h-4" />
             Anomaly Detection
             {anomalies.length > 0 && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'anomalies' ? 'bg-indigo-500 text-white' : 'bg-rose-100 text-rose-700 font-bold'}`}>
+              <span className={`text-[10px] px-2 py-0.2 rounded-full ${activeTab === 'anomalies' ? 'bg-white/20 text-white' : 'bg-[#ff3c02]/20 text-[#fa7041] font-bold'}`}>
                 {anomalies.length}
               </span>
             )}
@@ -904,16 +904,16 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('segments')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'segments' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Users className="w-4 h-4" />
             Segmentation (RFM / K-Means / ABC)
             {segmentationResult?.segments && segmentationResult.segments.length > 0 && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'segments' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700 font-bold'}`}>
+              <span className={`text-[10px] px-2 py-0.2 rounded-full ${activeTab === 'segments' ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300 font-bold'}`}>
                 {segmentationResult.segments.length}
               </span>
             )}
@@ -921,16 +921,16 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('reports')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'reports' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <FileText className="w-4 h-4" />
             Executive Reports & Actions
             {recommendations.length > 0 && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'reports' ? 'bg-indigo-500 text-white' : 'bg-amber-100 text-amber-800 font-bold'}`}>
+              <span className={`text-[10px] px-2 py-0.2 rounded-full ${activeTab === 'reports' ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-300 font-bold'}`}>
                 {recommendations.length}
               </span>
             )}
@@ -938,10 +938,10 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('charts')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'charts' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Activity className="w-4 h-4" />
@@ -950,10 +950,10 @@ export default function AnalyticsPage() {
 
           <button
             onClick={() => setActiveTab('all')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'all' 
-                ? 'bg-indigo-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30 font-bold' 
+                : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
             }`}
           >
             <Layers className="w-4 h-4" />

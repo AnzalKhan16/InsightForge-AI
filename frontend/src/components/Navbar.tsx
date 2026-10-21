@@ -33,35 +33,35 @@ export default function Navbar({ workspaceId, datasetId }: NavbarProps) {
 
   return (
     <>
-      <nav className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between text-slate-100">
+      <nav className="border-b border-white/10 bg-[#060709]/85 backdrop-blur-xl sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between text-slate-100 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]">
         {/* Brand & Left Navigation */}
         <div className="flex items-center gap-6">
           <button 
             onClick={() => router.push('/')}
             className="flex items-center gap-2.5 text-left group focus:outline-none"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform text-xs">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#ff3c02] via-[#f45b31] to-[#fa7041] flex items-center justify-center font-bold text-white shadow-lg shadow-[#ff3c02]/30 group-hover:scale-105 transition-transform text-xs">
               IF
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm md:text-base tracking-tight text-white group-hover:text-indigo-300 transition-colors">
+                <span className="font-extrabold text-sm md:text-base tracking-tight text-white group-hover:text-[#ffba86] transition-colors">
                   InsightForge AI
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
                   PRO
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Deterministic Analytics & Strategic AI</p>
+              <p className="text-[11px] text-[#9ca3af] hidden sm:block">Deterministic Analytics & Strategic AI</p>
             </div>
           </button>
 
           {/* Quick Links */}
-          <div className="hidden lg:flex items-center gap-1 border-l border-slate-800 pl-6 text-xs font-semibold text-slate-400">
+          <div className="hidden lg:flex items-center gap-1.5 border-l border-white/10 pl-6 text-xs font-semibold text-[#9ca3af]">
             <button
               onClick={() => router.push('/')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                pathname === '/' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                pathname === '/' ? 'text-white bg-white/10 border border-white/15 shadow-sm' : 'hover:text-white hover:bg-white/5'
               }`}
             >
               Dashboard Hub
@@ -69,8 +69,8 @@ export default function Navbar({ workspaceId, datasetId }: NavbarProps) {
             {workspaceId && datasetId && (
               <button
                 onClick={() => router.push(`/workspaces/${workspaceId}/datasets/${datasetId}/analytics`)}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  pathname.includes('/analytics') ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+                className={`px-3.5 py-1.5 rounded-full transition-all ${
+                  pathname.includes('/analytics') ? 'text-white bg-white/10 border border-white/15 shadow-sm' : 'hover:text-white hover:bg-white/5'
                 }`}
               >
                 Analytics Suite
@@ -84,8 +84,8 @@ export default function Navbar({ workspaceId, datasetId }: NavbarProps) {
           {token && user ? (
             /* Logged in state */
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                <div className="w-5 h-5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-[10px]">
+              <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0e0f14] border border-white/10 text-xs">
+                <div className="w-5 h-5 rounded-full bg-[#ff3c02]/20 border border-[#ff3c02]/40 text-[#fa7041] flex items-center justify-center font-bold text-[10px]">
                   {user.email.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-slate-300 font-medium truncate max-w-[150px]">
@@ -95,7 +95,7 @@ export default function Navbar({ workspaceId, datasetId }: NavbarProps) {
 
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#14151b] hover:bg-[#1e1f28] text-slate-300 hover:text-white border border-white/10 transition-all shadow-sm"
                 title="Sign out of session"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -103,19 +103,19 @@ export default function Navbar({ workspaceId, datasetId }: NavbarProps) {
               </button>
             </div>
           ) : (
-            /* Not logged in: Clean Sign In & Sign Up buttons at top right */
-            <div className="flex items-center gap-2">
+            /* Not logged in: Cryptox styled Sign In & Sign Up buttons */
+            <div className="flex items-center gap-2.5">
               <button
                 onClick={() => handleOpenAuth('login')}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all hover:border-slate-600 shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#121318] hover:bg-[#1a1b22] text-slate-200 border border-white/15 transition-all hover:border-white/25 shadow-sm"
               >
-                <LogIn className="w-3.5 h-3.5 text-slate-400" />
+                <LogIn className="w-3.5 h-3.5 text-[#fa7041]" />
                 Sign In
               </button>
 
               <button
                 onClick={() => handleOpenAuth('register')}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/30 transition-all active:scale-98"
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white shadow-lg shadow-[#ff3c02]/30 transition-all active:scale-98"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 Sign Up
