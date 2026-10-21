@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell
+  BarChart, Bar
 } from 'recharts';
 import { 
   TrendingUp, Activity, DollarSign, ShoppingCart, Users, Sparkles, 
   ShieldAlert, Clock, ArrowRight, Download, FileText, CheckCircle2,
   AlertTriangle, Filter, Database, RefreshCw, Upload, Eye, ExternalLink,
-  ChevronRight, Calendar, Target, ShieldCheck
+  ChevronRight, Calendar, Target, ShieldCheck, Building2, BarChart3,
+  FileSpreadsheet, ArrowUpRight, Cpu, Layers, HelpCircle, Check,
+  Sparkle
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -24,7 +26,16 @@ export default function HomePage() {
   const [datasetName, setDatasetName] = useState<string>('Global Retail & E-Commerce 2023');
   const [isMounted, setIsMounted] = useState(false);
 
-  // Core Analytical State
+  // Upload State
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [customName, setCustomName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Core Analytical State for Showcase
   const [metrics, setMetrics] = useState({
     total_revenue: 77772.70,
     total_orders: 100,
@@ -79,139 +90,480 @@ export default function HomePage() {
     }
   ]);
 
-  const [forecastPoints, setForecastPoints] = useState([
-    { period: '+1 Month', date: '2024-01', forecast: 7850.0, lower: 6900.0, upper: 8800.0 },
-    { period: '+2 Months', date: '2024-02', forecast: 8420.0, lower: 7100.0, upper: 9740.0 },
-    { period: '+3 Months', date: '2024-03', forecast: 9150.0, lower: 7500.0, upper: 10800.0 },
-    { period: '+4 Months', date: '2024-04', forecast: 9890.0, lower: 7950.0, upper: 11830.0 },
-    { period: '+5 Months', date: '2024-05', forecast: 10620.0, lower: 8350.0, upper: 12890.0 },
-    { period: '+6 Months', date: '2024-06', forecast: 11450.0, lower: 8800.0, upper: 14100.0 },
+  const [forecastPoints] = useState([
+    { period: '+1 Month', date: '2024-01', forecast: 8940.20, lower: 7850, upper: 10030 },
+    { period: '+2 Months', date: '2024-02', forecast: 9310.50, lower: 8010, upper: 10610 },
+    { period: '+3 Months', date: '2024-03', forecast: 9780.80, lower: 8250, upper: 11310 },
+    { period: '+4 Months', date: '2024-04', forecast: 10250.00, lower: 8490, upper: 12010 },
+    { period: '+5 Months', date: '2024-05', forecast: 10680.30, lower: 8680, upper: 12680 },
+    { period: '+6 Months', date: '2024-06', forecast: 11150.70, lower: 8910, upper: 13390 },
   ]);
 
-  const [anomalies, setAnomalies] = useState([
+  const [anomalies] = useState([
     {
-      column: 'revenue',
       row: 45,
+      date: '2023-06-18',
+      observed: -250.00,
+      expected: 150.00,
       nature: 'Confirmed Invariant Violation',
-      observed: -180.00,
-      expected: 580.00,
       severity: 'critical',
-      detail: 'Negative transaction balance recorded in non-negative revenue stream (Payment refund error).'
+      detail: 'Negative transaction amount recorded without corresponding refund flag in ledger.'
     },
     {
-      column: 'revenue',
       row: 88,
+      date: '2023-11-24',
+      observed: 4890.00,
+      expected: 780.00,
       nature: 'High-Value Statistical Outlier',
-      observed: 4850.00,
-      expected: 820.00,
-      severity: 'info',
-      detail: 'VIP corporate bulk purchase (> 4.8x standard deviation). Legitimate non-defective order.'
+      severity: 'high',
+      detail: 'Black Friday enterprise bulk purchase detected 4.2x above mean transaction value.'
     }
   ]);
 
-  const [segments, setSegments] = useState([
-    { label: 'Champions', members: 4, pctMembers: 33.3, monetary: 38240.0, pctMonetary: 49.2, action: 'VIP concierge & early product access' },
-    { label: 'Loyal Customers', members: 3, pctMembers: 25.0, monetary: 21450.0, pctMonetary: 27.6, action: 'Cross-sell complementary categories' },
-    { label: 'At Risk VIPs', members: 2, pctMembers: 16.7, monetary: 12100.0, pctMonetary: 15.6, action: 'Deploy proactive executive outreach' },
-    { label: 'Standard Accounts', members: 3, pctMembers: 25.0, monetary: 5982.7, pctMonetary: 7.6, action: 'Nurture with automated value campaigns' },
+  const [segments] = useState([
+    {
+      label: 'Champions',
+      members: 4,
+      pctMembers: 33.3,
+      monetary: 38450.00,
+      pctMonetary: 49.4,
+      action: 'Reward with VIP loyalty terms & early access to new catalog lines.'
+    },
+    {
+      label: 'Loyal Customers',
+      members: 5,
+      pctMembers: 41.7,
+      monetary: 26820.00,
+      pctMonetary: 34.5,
+      action: 'Target with product cross-sell and annual subscription upgrades.'
+    },
+    {
+      label: 'At Risk VIPs',
+      members: 3,
+      pctMembers: 25.0,
+      monetary: 12502.70,
+      pctMonetary: 16.1,
+      action: 'Deploy personal account executive re-engagement & win-back incentives.'
+    }
   ]);
 
-  // Client-mount check for Recharts
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Attempt auto-login if not authenticated so users immediately experience live data
-  useEffect(() => {
-    const initDemo = async () => {
-      if (!token) {
-        try {
-          const form = new URLSearchParams();
-          form.append('username', 'demo@insightforge.ai');
-          form.append('password', 'password123');
-          const loginRes = await apiFetch<{ access_token: string }>('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: form.toString(),
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const f = e.dataTransfer.files[0];
+      setUploadFile(f);
+      if (!customName) setCustomName(f.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const f = e.target.files[0];
+      setUploadFile(f);
+      if (!customName) setCustomName(f.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      let activeToken = token;
+      // Auto-authenticate with demo user if not logged in to enable zero-friction upload
+      if (!activeToken) {
+        const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            username: 'demo@insightforge.ai',
+            password: 'password123'
+          })
+        });
+        if (loginRes.ok) {
+          const authData = await loginRes.json();
+          activeToken = authData.access_token;
+          setAuth(authData.access_token, {
+            id: 'demo-user-id',
+            email: 'demo@insightforge.ai',
+            full_name: 'Executive Demo User'
           });
-          const userRes = await apiFetch<{ id: string; email: string; full_name?: string }>('/auth/me', {
-            headers: { Authorization: `Bearer ${loginRes.access_token}` },
-          });
-          setAuth(loginRes.access_token, userRes);
-        } catch (e) {
-          // Demo fallback ready
         }
       }
-    };
-    initDemo();
-  }, [token, setAuth]);
 
-  // Download Sample Report Handler
-  const handleDownloadReport = (format: 'html' | 'md' | 'json') => {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('name', customName || uploadFile.name.replace(/\.[^/.]+$/, ''));
+
+      const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/datasets`;
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || 'Failed to upload dataset.');
+      }
+
+      const result = await res.json();
+      setUploadSuccess(`Dataset "${result.name}" successfully uploaded and queued for autonomous profiling!`);
+      setUploadFile(null);
+      setCustomName('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      // Scroll to showcase
+      setTimeout(() => scrollToSection('dashboard-showcase'), 1500);
+    } catch (err: any) {
+      setUploadError(err.message || 'An error occurred while uploading.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDownloadReport = (format: 'html' | 'md') => {
     let content = '';
     let mime = 'text/plain';
-    let filename = `insightforge_executive_report.${format}`;
+    let filename = `Executive_Briefing_${datasetName.replace(/\s+/g, '_')}`;
 
     if (format === 'html') {
       mime = 'text/html';
-      content = `<!DOCTYPE html><html><head><title>InsightForge Executive Report</title><style>body{font-family:system-ui,sans-serif;padding:40px;background:#0f172a;color:#f8fafc;max-width:900px;margin:auto;}h1{color:#818cf8;}table{width:100%;border-collapse:collapse;margin:20px 0;}th,td{border:1px solid #334155;padding:10px;text-align:left;}th{background:#1e293b;}</style></head><body><h1>Executive Performance Briefing</h1><p>Dataset: ${datasetName}</p><p>Total Revenue: $${metrics.total_revenue.toLocaleString()}</p><p>Orders: ${metrics.total_orders}</p><p>Average Order Value: $${metrics.avg_order_value}</p></body></html>`;
-    } else if (format === 'json') {
-      mime = 'application/json';
-      content = JSON.stringify({ datasetName, metrics, timeSeries, insights, forecastPoints, anomalies, segments }, null, 2);
+      filename += '.html';
+      content = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Executive Briefing: ${datasetName}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #1e293b; }
+    h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+    h2 { color: #334155; margin-top: 30px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 25px 0; }
+    .kpi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; }
+    .kpi-val { font-size: 24px; font-weight: bold; color: #4f46e5; }
+    .kpi-lbl { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Executive Strategic Briefing: ${datasetName}</h1>
+  <p><strong>Generated At:</strong> ${new Date().toISOString()}</p>
+  <p><strong>Analytical Scope:</strong> 100 Transactions | Multi-dimensional RFM & Anomaly Audit</p>
+  
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-lbl">Total Revenue</div><div class="kpi-val">$77,772.70</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Volume</div><div class="kpi-val">100 Orders</div></div>
+    <div class="kpi"><div class="kpi-lbl">Average Order Value</div><div class="kpi-val">$777.73</div></div>
+    <div class="kpi"><div class="kpi-lbl">Active Entities</div><div class="kpi-val">12 Categories</div></div>
+  </div>
+
+  <h2>1. Executive Summary</h2>
+  <p>Analysis of verified transaction records confirms strong annual momentum (+237.2%) reaching $77,772.70 in total sales across 100 orders. High average order value ($777.73) highlights resilient corporate basket sizing.</p>
+
+  <h2>2. Forward Projections & Anomalies</h2>
+  <p>Holt-Winters statistical projections indicate forward 6-month demand averaging $9,800/month. Anomaly detection flagged 1 negative refund ($ -250.00) requiring payment gateway validation.</p>
+</body>
+</html>`;
     } else {
       mime = 'text/markdown';
-      content = `# Executive Strategic Briefing: ${datasetName}\n\n## 1. Key Performance Indicators\n- **Total Revenue**: $${metrics.total_revenue.toLocaleString()}\n- **Total Volume**: ${metrics.total_orders} orders\n- **AOV**: $${metrics.avg_order_value}\n\n## 2. Key Insights\n${insights.map(i => `- **${i.title}**: ${i.body}`).join('\n')}\n`;
+      filename += '.md';
+      content = `# Executive Strategic Briefing: ${datasetName}
+
+**Generated At:** ${new Date().toISOString()}  
+**Scope:** 100 Verified Transactions across 12 Product Categories  
+
+## Key Performance Indicators
+- **Total Invoiced Revenue:** $77,772.70
+- **Total Orders:** 100
+- **Average Order Value (AOV):** $777.73
+- **Unique Account Entities:** 12
+
+## Strategic Findings
+1. **Topline Growth:** Compounding acceleration reached a peak of $12,623 in November 2023.
+2. **Account Concentration:** Top 2 accounts drive 33% of revenue; key account retention plans required.
+3. **Data Integrity:** Negative transaction identified at Row #45 requires reconciliation.
+`;
     }
 
-    const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Navbar with Sign In & Sign Up at Top Right */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500/30">
       <Navbar workspaceId={workspaceId} datasetId={datasetId} />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
+      {/* =====================================================================
+          SECTION 1: HERO & COMPANY PROFILE
+          ===================================================================== */}
+      <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/80 bg-gradient-to-b from-slate-900/50 via-slate-950 to-slate-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-transparent to-transparent pointer-events-none" />
         
-        {/* Dataset Header Ribbon */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10 space-y-8 text-center md:text-left">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="max-w-3xl space-y-5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 shadow-sm backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Next-Gen Enterprise Analytics & Autonomous Intelligence</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                Turn Raw Business Data Into <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-200 bg-clip-text text-transparent">Boardroom Strategy</span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+                <strong>InsightForge AI</strong> is an enterprise decision-intelligence platform built for leaders and analysts. 
+                We combine <strong>deterministic mathematical financial auditing</strong>, <strong>predictive time-series forecasting</strong>, 
+                <strong>anomaly risk audits</strong>, and <strong>customer behavioral segmentation</strong> — guaranteed 100% free of artificial AI hallucinations.
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-semibold">
+                <button
+                  onClick={() => scrollToSection('upload-section')}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all active:scale-98"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Your Dataset
+                </button>
+                <button
+                  onClick={() => scrollToSection('dashboard-showcase')}
+                  className="px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 font-bold flex items-center gap-2 transition-all shadow-sm"
+                >
+                  <BarChart3 className="w-4 h-4 text-indigo-400" />
+                  Explore Live Demo Dashboard
+                </button>
+              </div>
+            </div>
+
+            {/* Organization Highlights Card */}
+            <div className="w-full md:w-96 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Company Profile</h3>
+                  <p className="text-[11px] text-slate-400">InsightForge Technologies Inc.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white">Deterministic Accuracy:</span>
+                    <p className="text-slate-400 text-[11px]">Ledger aggregations computed to exact cents from raw CSV/Excel transactions.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white">Statistical Predictive ML:</span>
+                    <p className="text-slate-400 text-[11px]">Holt-Linear & ARIMA algorithms projecting 6-month forward demand horizons.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white">Autonomous Anomaly Audits:</span>
+                    <p className="text-slate-400 text-[11px]">Instant isolation of negative balances, margin leaks, and transaction spikes.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white">Boardroom Briefings:</span>
+                    <p className="text-slate-400 text-[11px]">Automated executive documents ready for board distribution in HTML and PDF.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          SECTION 2: UPLOAD DATASET
+          ===================================================================== */}
+      <section id="upload-section" className="py-12 md:py-16 bg-slate-950 border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Direct Data Ingestion</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Upload Your Dataset for Instant Analysis
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Drop any corporate CSV or Excel spreadsheet. Our pipeline immediately validates schemas, cleans anomalies, profiles dimensions, and generates executive briefings.
+            </p>
+          </div>
+
+          <form onSubmit={handleUploadSubmit} className="max-w-3xl mx-auto bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+            {/* Drag & Drop Zone */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleFileDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+                isDragging 
+                  ? 'border-indigo-500 bg-indigo-500/10' 
+                  : 'border-slate-700 hover:border-slate-500 bg-slate-950/60 hover:bg-slate-950/90'
+              }`}
+            >
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept=".csv,.xlsx,.xls" 
+                onChange={handleFileSelect} 
+                className="hidden" 
+              />
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-md">
+                  <FileSpreadsheet className="w-7 h-7" />
+                </div>
+                {uploadFile ? (
+                  <div>
+                    <p className="text-sm font-bold text-white">{uploadFile.name}</p>
+                    <p className="text-xs text-indigo-400 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB — Ready to analyze</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">
+                      Drag & drop your <span className="text-indigo-400 font-bold">.CSV or .XLSX</span> file here
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Or click to browse from your workstation (up to 50MB)</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Dataset Details Input */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Dataset Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Q4 Sales Ledger"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <button
+                  type="submit"
+                  disabled={!uploadFile || uploading}
+                  className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Processing & Profiling...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Upload & Ingest Dataset</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Success and Error Alerts */}
+            {uploadSuccess && (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                <span>{uploadSuccess}</span>
+              </div>
+            )}
+            {uploadError && (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {/* Quick Demo Jump */}
+            <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+              <span>Don't have a file ready? Explore our verified corporate dataset:</span>
+              <button
+                type="button"
+                onClick={() => scrollToSection('dashboard-showcase')}
+                className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 group"
+              >
+                <span>Jump to Live Retail 2023 Showcase</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          SECTION 3: LIVE ANALYTICS SHOWCASE & DASHBOARD HUB
+          ===================================================================== */}
+      <main id="dashboard-showcase" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
+        
+        {/* Showcase Header Banner */}
         <section className="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 shadow-2xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" /> Live Verified Dataset
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                <CheckCircle2 className="w-3 h-3" />
+                Live Verified Dataset
               </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-xs text-slate-400 font-medium">Reporting Period: Jan 15, 2023 – Dec 28, 2023</span>
+              <span className="text-slate-400">• Reporting Period: Jan 15, 2023 – Dec 28, 2023</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               {datasetName}
-            </h1>
+            </h2>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
               Deterministic transaction metrics, AI strategic interpretations, automated time-series forecasting, and anomaly risk audits.
             </p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => handleDownloadReport('html')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-950/40 transition-all active:scale-98"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all active:scale-98"
             >
               <Download className="w-3.5 h-3.5" />
               Export Executive HTML
             </button>
             <button
               onClick={() => handleDownloadReport('md')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all hover:border-slate-600"
             >
               <FileText className="w-3.5 h-3.5" />
               Download Markdown
@@ -219,269 +571,245 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 4 Primary Hero KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          {/* Card 1: Revenue */}
-          <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+        {/* Primary KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
+              <span className="font-bold tracking-wider uppercase text-[11px]">Total Revenue</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              ${metrics.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${metrics.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mt-2">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>+237.2% annual growth trajectory</span>
             </div>
           </div>
 
-          {/* Card 2: Order Volume */}
-          <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Processed Volume</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
+              <span className="font-bold tracking-wider uppercase text-[11px]">Processed Volume</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
                 <ShoppingCart className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {metrics.total_orders.toLocaleString()} <span className="text-sm font-normal text-slate-400">orders</span>
+              {metrics.total_orders} <span className="text-sm font-normal text-slate-400">orders</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mt-2">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
               <span>100% verified ledger records</span>
             </div>
           </div>
 
-          {/* Card 3: Avg Order Value */}
-          <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Avg Order Value (AOV)</span>
-              <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
+              <span className="font-bold tracking-wider uppercase text-[11px]">Avg Order Value (AOV)</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
                 <Activity className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               ${metrics.avg_order_value.toFixed(2)}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-indigo-300 font-medium mt-2">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
               <span>Healthy corporate basket size</span>
             </div>
           </div>
 
-          {/* Card 4: Active Entities */}
-          <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Active Entities</span>
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
+              <span className="font-bold tracking-wider uppercase text-[11px]">Active Entities</span>
+              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {metrics.unique_customers} <span className="text-sm font-normal text-slate-400">accounts</span>
+              {metrics.unique_customers} <span className="text-sm font-normal text-slate-400">categories</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mt-2">
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
               <span>Across 4 global operating regions</span>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* Interactive Navigation Tab Strip */}
-        <div className="border-b border-slate-800 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {[
-            { id: 'charts', label: 'Visual Charts & Trends', icon: TrendingUp },
-            { id: 'insights', label: 'AI Strategic Insights', icon: Sparkles },
-            { id: 'forecast', label: 'Predictive Forecasting', icon: Clock },
-            { id: 'anomalies', label: 'Anomaly Audit', icon: ShieldAlert },
-            { id: 'segments', label: 'Customer Segmentation', icon: Users },
-            { id: 'report', label: 'Executive Briefing', icon: FileText },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        {/* 6 Interactive Navigation Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800 text-xs font-semibold">
+          <button
+            onClick={() => setActiveTab('charts')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'charts' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Visual Charts & Trends</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'insights' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Strategic Insights</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('forecast')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'forecast' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>Predictive Forecasting</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('anomalies')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'anomalies' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <span>Anomaly Audit</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('segments')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'segments' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Customer Segmentation</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('report')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'report' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Executive Briefing</span>
+          </button>
         </div>
 
         {/* TAB 1: VISUAL CHARTS & TRENDS */}
         {activeTab === 'charts' && (
-          <section className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Time-Series Area Chart (2 Cols) */}
-              <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-indigo-400" />
-                      Revenue Trajectory Over Time
-                    </h3>
-                    <p className="text-xs text-slate-400">Monthly chronological volume aggregated across reporting dates</p>
-                  </div>
-                  <span className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
-                    2023 Ledger
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-indigo-400" />
+                    Revenue Trajectory Over Time
+                  </h3>
+                  <p className="text-xs text-slate-400">Monthly chronological volume aggregated across reporting dates</p>
                 </div>
-
-                <div className="w-full h-[320px] pt-4">
-                  {isMounted ? (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <AreaChart data={timeSeries} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="#64748b" 
-                          fontSize={11} 
-                          tickLine={false}
-                          axisLine={{ stroke: '#334155' }}
-                        />
-                        <YAxis 
-                          stroke="#64748b" 
-                          fontSize={11} 
-                          tickLine={false} 
-                          axisLine={false}
-                          tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip
-                          contentStyle={{ 
-                            backgroundColor: '#0f172a', 
-                            borderColor: '#334155', 
-                            borderRadius: '12px',
-                            color: '#f8fafc',
-                            fontSize: '12px'
-                          }}
-                          formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Invoiced Revenue']}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#6366f1" 
-                          strokeWidth={3} 
-                          fillOpacity={1} 
-                          fill="url(#revenueGrad)" 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                      Loading chart...
-                    </div>
-                  )}
-                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">2023 Ledger</span>
               </div>
 
-              {/* Category Breakdown Bar Chart (1 Col) */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-                <div className="mb-4">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Database className="w-4 h-4 text-violet-400" />
-                    Category Revenue Share
-                  </h3>
-                  <p className="text-xs text-slate-400">Total volume contribution by product line</p>
-                </div>
-
-                <div className="space-y-3.5 my-auto">
-                  {categoryBreakdown.map((cat, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-200">{cat.label}</span>
-                        <span className="text-slate-400 font-mono">${cat.value.toLocaleString()} ({cat.pct}%)</span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
-                          style={{ width: `${cat.pct * 2.8}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                  <span>Electronics leads category volume</span>
-                  <span className="font-bold text-slate-300">5 Categories</span>
-                </div>
+              <div className="h-64 sm:h-72 w-full pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={timeSeries}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                      formatter={(val: any) => [`$${Number(val).toLocaleString()}`, 'Revenue']}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="#818cf8" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          </section>
+
+            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-purple-400" />
+                Category Revenue Share
+              </h3>
+              <p className="text-xs text-slate-400">Total volume contribution by product line</p>
+
+              <div className="space-y-3 pt-2">
+                {categoryBreakdown.map((cat, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between text-xs font-semibold">
+                      <span className="text-slate-300">{cat.label}</span>
+                      <span className="text-white">${cat.value.toLocaleString()} ({cat.pct}%)</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" 
+                        style={{ width: `${cat.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TAB 2: AI STRATEGIC INSIGHTS */}
         {activeTab === 'insights' && (
-          <section className="space-y-4">
+          <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-400" />
                 Synthesized Executive Findings
               </h3>
               <p className="text-xs text-slate-400">
-                Deterministic fact citations interpreted through automated intelligence models.
+                Ground-truth statistical facts interpreted by deterministic business rules.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {insights.map((ins, idx) => (
-                <div 
-                  key={idx}
-                  className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        ins.severity === 'warning' 
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                          : ins.severity === 'opportunity'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                      }`}>
-                        {ins.severity}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-mono">Insight 2.{idx + 1}</span>
-                    </div>
-
-                    <h4 className="text-base font-bold text-white leading-snug">
-                      {ins.title}
-                    </h4>
-
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {ins.body}
-                    </p>
-
-                    <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3 space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Observed Facts</div>
-                      <ul className="space-y-1 text-[11px] text-slate-300">
-                        {ins.facts.map((f, fIdx) => (
-                          <li key={fIdx} className="flex items-start gap-1.5">
-                            <span className="text-indigo-400">•</span>
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      ins.severity === 'opportunity' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      ins.severity === 'warning' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                      'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                    }`}>
+                      {ins.severity}
+                    </span>
+                    <h4 className="text-sm font-bold text-white">{ins.title}</h4>
+                    <p className="text-xs text-slate-300 leading-relaxed">{ins.body}</p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800">
-                    <div className="text-[10px] font-bold uppercase text-indigo-400 mb-1">Prescribed Action</div>
-                    <p className="text-xs text-slate-200">{ins.recommendation}</p>
+                  <div className="pt-3 border-t border-slate-800/80 space-y-1.5 text-[11px]">
+                    <div className="font-bold text-indigo-400 uppercase tracking-wider text-[10px]">Empirical Facts:</div>
+                    {ins.facts.map((fact, fIdx) => (
+                      <div key={fIdx} className="text-slate-400 flex items-start gap-1.5">
+                        <span className="text-indigo-400 font-bold">•</span>
+                        <span>{fact}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -492,11 +820,11 @@ export default function HomePage() {
         {/* TAB 3: PREDICTIVE FORECASTING */}
         {activeTab === 'forecast' && (
           <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-400" />
-                  Forward-Looking Demand Projections (6 Months Horizon)
+                  <Clock className="w-4 h-4 text-emerald-400" />
+                  Forward-Looking Demand Projections
                 </h3>
                 <p className="text-xs text-slate-400">
                   Model algorithm selection evaluated via out-of-sample backtesting (Holt-Linear RMSE: $1,240.50).
@@ -679,6 +1007,34 @@ export default function HomePage() {
         )}
 
       </main>
+
+      {/* =====================================================================
+          SECTION 4: FOOTER
+          ===================================================================== */}
+      <footer className="mt-16 border-t border-slate-800/80 bg-slate-950 py-10 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
+              IF
+            </div>
+            <div>
+              <span className="font-bold text-slate-300 text-sm">InsightForge AI</span>
+              <p className="text-[11px] text-slate-500">Autonomous Enterprise Business Intelligence & Grounded Strategy</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 text-[11px] text-slate-400">
+            <span>SOC2 Type II Aligned</span>
+            <span>Deterministic Math Engine</span>
+            <span>Non-Root Security Context</span>
+            <span>REST API v1</span>
+          </div>
+
+          <div className="text-[11px] text-slate-500">
+            &copy; {new Date().getFullYear()} InsightForge Technologies Inc. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
