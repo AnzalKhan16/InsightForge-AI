@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NexusSphere Technologies, Inc. - Enterprise Sales & Revenue Ledger</title>
+<style>
+    @page {
+        size: letter landscape;
+        margin: 12mm 10mm 12mm 10mm;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #0f172a;
+        background: #ffffff;
+        margin: 0;
+        padding: 0;
+        line-height: 1.4;
+    }
+    .header-box {
+        background: linear-gradient(135deg, #090d16 0%, #151b28 100%);
+        color: #ffffff;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(255, 60, 2, 0.2);
+        color: #ff7b52;
+        border: 1px solid rgba(255, 60, 2, 0.4);
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .stat-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 16px;
+    }
+    .stat-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.05em;
+    }
+    .stat-val {
+        font-size: 19px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+    .table-container {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+    .table-container th {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 9px 10px;
+        text-align: left;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .section-title {
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #1e293b;
+        margin: 20px 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .section-title::before {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 14px;
+        background: #ff3c02;
+        border-radius: 2px;
+    }
+    .meta-box {
+        background: #f1f5f9;
+        border-left: 4px solid #ff3c02;
+        padding: 10px 14px;
+        border-radius: 0 8px 8px 0;
+        font-size: 11px;
+        color: #334155;
+        margin-bottom: 16px;
+    }
+    .footer-box {
+        margin-top: 24px;
+        padding-top: 12px;
+        border-top: 1px solid #cbd5e1;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #64748b;
+    }
+</style>
+</head>
+<body>
+
+<div class="header-box">
+    <div>
+        <div class="badge">Official Corporate Dataset • Confidential Benchmark</div>
+        <h1 style="margin: 6px 0 2px 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">
+            NexusSphere Technologies, Inc. (NASDAQ: NXSP)
+        </h1>
+        <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+            Enterprise Customer Subscriptions, Transaction Ledger & Regional Revenue Dataset (FY2023 - FY2024)
+        </p>
+    </div>
+    <div style="text-align: right;">
+        <div style="font-size: 11px; color: #94a3b8;">Generated: October 2026</div>
+        <div style="font-size: 11px; color: #94a3b8;">Scope: 54 Enterprise Accounts</div>
+        <div style="font-size: 11px; color: #94a3b8;">Format: Deterministic Relational Schema</div>
+    </div>
+</div>
+
+<div class="meta-box">
+    <strong>Dataset Overview:</strong> This certified enterprise dataset records annualized contract value (ARR), subscription product tiers, retention indices, customer satisfaction (NPS), and telemetry usage volume for NexusSphere's global B2B client portfolio. Designed for advanced regression forecasting, cohort segmentation, and anomaly detection audits.
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Contract Value (ARR)</div>
+        <div class="stat-val" style="color: #047857;">$6,086,951.30</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Average Contract Size</div>
+        <div class="stat-val">$112,721.32</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Mean Net Promoter Score</div>
+        <div class="stat-val" style="color: #4338ca;">7.5 / 10</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Client Entities</div>
+        <div class="stat-val">54 Accounts</div>
+    </div>
+</div>
+
+<div class="section-title">Regional Distribution & Revenue Share Summary</div>
+<table style="width: 100%; max-width: 650px; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <thead>
+        <tr style="background: #1e293b; color: #f8fafc; font-size: 10.5px; text-transform: uppercase;">
+            <th style="padding: 7px 12px; text-align: left;">Global Region</th>
+            <th style="padding: 7px 12px; text-align: center;">Account Count</th>
+            <th style="padding: 7px 12px; text-align: right;">Total Monetized Value</th>
+            <th style="padding: 7px 12px; text-align: right;">Contribution</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">North America</td>
+        <td style="padding: 8px 12px; text-align: center; color: #475569;">20 accounts</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: #047857;">$2,332,504.41</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #4338ca;">38.3%</td>
+    </tr>
+    
+    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">APAC</td>
+        <td style="padding: 8px 12px; text-align: center; color: #475569;">15 accounts</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: #047857;">$1,707,168.01</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #4338ca;">28.0%</td>
+    </tr>
+    
+    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">EMEA</td>
+        <td style="padding: 8px 12px; text-align: center; color: #475569;">14 accounts</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: #047857;">$1,427,377.49</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #4338ca;">23.4%</td>
+    </tr>
+    
+    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">Latin America</td>
+        <td style="padding: 8px 12px; text-align: center; color: #475569;">5 accounts</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: #047857;">$619,901.39</td>
+        <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #4338ca;">10.2%</td>
+    </tr>
+    
+    </tbody>
+</table>
+
+<div class="section-title">Complete Tabular Enterprise Ledger (54 Transactions)</div>
+<table class="table-container">
+    <thead>
+        <tr>
+            <th>Txn ID</th>
+            <th>Client Account</th>
+            <th>Industry Sector</th>
+            <th>Region</th>
+            <th>Product Tier</th>
+            <th>Order Date</th>
+            <th style="text-align: right;">Revenue (ARR)</th>
+            <th style="text-align: center;">Duration</th>
+            <th style="text-align: center;">Status</th>
+            <th style="text-align: center;">NPS</th>
+            <th style="text-align: center;">Risk Level</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0001</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Titanium Metals Global</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Heavy Industry</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-01-17</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$255,447.30</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0002</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Crestview Financial</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-01-24</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$35,983.31</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">4/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0003</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Kyoto Precision Instruments</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Robotics</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-02-07</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$21,086.17</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0004</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Tokyo Robotics Corp</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Robotics</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-02-10</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$115,454.81</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0005</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Singapore Capital Holdings</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-02-25</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$120,129.48</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">4/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0006</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Quantum Dynamics Labs</td>
+        <td style="padding: 7px 10px; color: #475569;">Aerospace & Defense</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-02-27</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$29,611.67</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">5/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0007</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Vertex Cloud Infrastructure</td>
+        <td style="padding: 7px 10px; color: #475569;">Enterprise Software</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-03-07</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$143,965.51</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">6/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0008</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Titanium Metals Global</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Heavy Industry</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-03-12</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$130,167.19</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0009</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Panama Shipping Lines</td>
+        <td style="padding: 7px 10px; color: #475569;">Logistics & Supply Chain</td>
+        <td style="padding: 7px 10px; color: #475569;">Latin America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-03-20</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$107,358.21</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0010</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Helvetia Wealth Partners</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-03-30</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$223,110.65</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">6/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0011</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Titanium Metals Global</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Heavy Industry</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-04-08</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$64,194.54</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0012</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Helvetia Wealth Partners</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-04-17</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$21,678.38</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0013</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Helvetia Wealth Partners</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-04-24</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$109,546.11</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0014</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Starlight CyberSec</td>
+        <td style="padding: 7px 10px; color: #475569;">Enterprise Software</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-04-30</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$221,253.83</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0015</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Cobalt Cloud Networks</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-05-05</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$28,760.38</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0016</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Indus AgriTech Innovations</td>
+        <td style="padding: 7px 10px; color: #475569;">Agriculture & IoT</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-05-13</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$277,329.37</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0017</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Starlight CyberSec</td>
+        <td style="padding: 7px 10px; color: #475569;">Enterprise Software</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-05-18</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$101,173.97</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">4/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0018</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Sao Paulo Payments Inc</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">Latin America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-05-25</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$273,264.37</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0019</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Quantum Dynamics Labs</td>
+        <td style="padding: 7px 10px; color: #475569;">Aerospace & Defense</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-06-01</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$67,273.49</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0020</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Lumina Biopharma</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-06-17</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$23,923.93</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0021</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Cobalt Cloud Networks</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-06-22</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$180,463.34</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0023</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Helvetia Wealth Partners</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-06-30</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$266,665.36</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0022</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Tokyo Robotics Corp</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Robotics</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-07-02</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$237,622.54</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0024</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Bavaria Auto Automation</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Automotive</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-07-09</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$28,126.94</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">5/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0025</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Pinnacle Asset Management</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-07-18</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$38,112.75</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0026</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Indus AgriTech Innovations</td>
+        <td style="padding: 7px 10px; color: #475569;">Agriculture & IoT</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-08-01</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$247,078.27</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0027</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Pinnacle Asset Management</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-08-02</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$203,201.06</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0028</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Lumina Biopharma</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-08-09</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$63,858.04</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">4/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0029</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Titanium Metals Global</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Heavy Industry</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-08-14</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$31,565.95</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0030</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Bavaria Auto Automation</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Automotive</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-08-21</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$40,433.03</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0032</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Crestview Financial</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-09-05</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$28,471.66</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0031</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Seoul AI Diagnostics</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-09-08</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$28,057.72</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0033</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">BioGenetics Australasia</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-09-15</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$18,796.31</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0034</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Cobalt Cloud Networks</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-09-26</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$83,392.06</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">4/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0035</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Seoul AI Diagnostics</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-10-06</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$25,318.96</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0037</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Starlight CyberSec</td>
+        <td style="padding: 7px 10px; color: #475569;">Enterprise Software</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-10-13</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$19,025.65</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0036</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Pacific Rim Retail Ltd</td>
+        <td style="padding: 7px 10px; color: #475569;">Retail & Ecommerce</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-10-15</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$120,185.06</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0038</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Oceanic Data Services</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-10-23</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$220,105.07</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">6/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0039</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Apex Global Logistics</td>
+        <td style="padding: 7px 10px; color: #475569;">Logistics & Supply Chain</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-10-31</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$31,044.58</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0040</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Panama Shipping Lines</td>
+        <td style="padding: 7px 10px; color: #475569;">Logistics & Supply Chain</td>
+        <td style="padding: 7px 10px; color: #475569;">Latin America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-11-06</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$21,812.87</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0041</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Andes Energy Logistics</td>
+        <td style="padding: 7px 10px; color: #475569;">Energy & Utilities</td>
+        <td style="padding: 7px 10px; color: #475569;">Latin America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-11-15</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$64,876.10</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">6/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0042</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Apex Global Logistics</td>
+        <td style="padding: 7px 10px; color: #475569;">Logistics & Supply Chain</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-11-21</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$155,525.77</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0043</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Solaris Health Systems</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-11-28</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$236,831.08</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">5/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0044</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Horizon Media Group</td>
+        <td style="padding: 7px 10px; color: #475569;">Media & Entertainment</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-12-08</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$219,641.89</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0045</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Singapore Capital Holdings</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Essential Analytics Pack</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-12-17</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$31,633.72</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">8/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2023-0046</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Oceanic Data Services</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2023-12-18</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$40,918.90</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0047</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Pinnacle Asset Management</td>
+        <td style="padding: 7px 10px; color: #475569;">Finance & FinTech</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Enterprise Elite Suite</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-01-01</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$267,855.84</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0048</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Aether Telecom UK</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Professional Cloud Core</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-01-05</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$76,656.51</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">9/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0049</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Aura BioSystems</td>
+        <td style="padding: 7px 10px; color: #475569;">Healthcare & Life Sciences</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-01-15</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$155,940.77</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Pending</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">7/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0050</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Oceanic Data Services</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-01-19</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$150,156.02</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">24 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Minimal
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0051</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Panama Shipping Lines</td>
+        <td style="padding: 7px 10px; color: #475569;">Logistics & Supply Chain</td>
+        <td style="padding: 7px 10px; color: #475569;">Latin America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-01-31</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$152,589.84</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">5/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0052</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Vertex Cloud Infrastructure</td>
+        <td style="padding: 7px 10px; color: #475569;">Enterprise Software</td>
+        <td style="padding: 7px 10px; color: #475569;">North America</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-02-01</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$52,157.37</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">36 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">10/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #ecfdf5; color: #10b981; border: 1px solid #10b98140; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Low
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0053</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Cobalt Cloud Networks</td>
+        <td style="padding: 7px 10px; color: #475569;">Telecommunications</td>
+        <td style="padding: 7px 10px; color: #475569;">EMEA</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">AI Predictive Engine</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-02-18</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$124,821.99</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Completed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">6/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fef2f2; color: #ef4444; border: 1px solid #ef444440; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Elevated
+            </span>
+        </td>
+    </tr>
+    
+    <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 7px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">NXSP-2024-0054</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: #1e293b;">Tokyo Robotics Corp</td>
+        <td style="padding: 7px 10px; color: #475569;">Manufacturing & Robotics</td>
+        <td style="padding: 7px 10px; color: #475569;">APAC</td>
+        <td style="padding: 7px 10px; color: #1e293b; font-weight: 500;">Growth Accelerator Tier</td>
+        <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">2024-02-20</td>
+        <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #047857; font-family: monospace;">$53,295.61</td>
+        <td style="padding: 7px 10px; text-align: center; color: #475569;">12 mo</td>
+        <td style="padding: 7px 10px; text-align: center;"><span style="background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600;">Renewed</span></td>
+        <td style="padding: 7px 10px; text-align: center; font-weight: 600;">5/10</td>
+        <td style="padding: 7px 10px; text-align: center;">
+            <span style="background: #fffbeb; color: #f59e0b; border: 1px solid #f59e0b40; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700;">
+                Medium
+            </span>
+        </td>
+    </tr>
+    
+    </tbody>
+</table>
+
+<div class="footer-box">
+    <div><strong>NexusSphere Data Platform</strong> • Austin, TX 78701 • Verification Hash: SHA256-NXSP-882194</div>
+    <div>Page 1 of 1 • Internal Commercial Dataset • Machine-Readable & Ingestion-Ready</div>
+</div>
+
+</body>
+</html>

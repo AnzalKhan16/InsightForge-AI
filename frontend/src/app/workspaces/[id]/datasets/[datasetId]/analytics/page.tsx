@@ -204,13 +204,15 @@ interface InsightItem {
 }
 
 export default function AnalyticsPage() {
-  const { token, user } = useAuthStore();
+  const { token, user, setAuth } = useAuthStore();
   const router = useRouter();
   const params = useParams();
   const workspaceId = params.id as string;
   const datasetId = params.datasetId as string;
 
+  const [mounted, setMounted] = useState(false);
   const [dataset, setDataset] = useState<any>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [analyses, setAnalyses] = useState<any[]>([]);
   const [insights, setInsights] = useState<InsightItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -589,39 +591,42 @@ export default function AnalyticsPage() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (activeAuthToken?: string) => {
+    const currentToken = activeAuthToken || token;
+    if (!currentToken) return;
     try {
       setLoading(true);
+      setFetchError(null);
       const [ds, an, ins, fcSchema, fcs, anoms, sSchema, sResult, recs, reps] = await Promise.all([
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }),
         apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/analyses`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }),
         apiFetch<InsightItem[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/insights`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }),
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecast/schema`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => null),
         apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/forecasts`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => []),
         apiFetch<AnomalyItem[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/anomalies`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => []),
         apiFetch<SegmentationSchema>(`/workspaces/${workspaceId}/datasets/${datasetId}/segmentation/schema`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => null),
         apiFetch<any>(`/workspaces/${workspaceId}/datasets/${datasetId}/segments`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => null),
         apiFetch<{ recommendations: RecommendationItem[] }>(`/workspaces/${workspaceId}/datasets/${datasetId}/recommendations`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => ({ recommendations: [] })),
         apiFetch<any[]>(`/workspaces/${workspaceId}/datasets/${datasetId}/reports`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         }).catch(() => []),
       ]);
       setDataset(ds);
@@ -668,6 +673,7 @@ export default function AnalyticsPage() {
       }
     } catch (err: any) {
       console.error("Failed to fetch analytics or insights", err);
+      setFetchError(err.message || 'Failed to load analytics data.');
     } finally {
       setLoading(false);
     }
@@ -709,8 +715,57 @@ export default function AnalyticsPage() {
   }, [forecastResult]);
 
   useEffect(() => {
-    if (token) fetchData();
-  }, [token, workspaceId, datasetId]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    let isSubscribed = true;
+
+    const initAuthAndFetch = async () => {
+      let currentToken = token;
+      if (!currentToken || !user) {
+        try {
+          const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              username: 'demo@insightforge.ai',
+              password: 'password123',
+            }),
+          });
+          if (loginRes.ok) {
+            const authData = await loginRes.json();
+            currentToken = authData.access_token;
+            if (isSubscribed) {
+              setAuth(authData.access_token, {
+                id: '7a99714b32364f8fb36135428ab46443',
+                email: 'demo@insightforge.ai',
+                full_name: 'Executive Demo User',
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Auto-login fallback error", err);
+        }
+      }
+
+      if (isSubscribed) {
+        if (currentToken) {
+          fetchData(currentToken);
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuthAndFetch();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [mounted, token, user, workspaceId, datasetId]);
 
   const runAnalytics = async () => {
     setSubmittingAnalysis(true);
@@ -789,15 +844,62 @@ export default function AnalyticsPage() {
     });
   }, [insights, severityFilter, categoryFilter]);
 
-  if (!user) return null;
-  if (loading && analyses.length === 0 && insights.length === 0) return (
-    <div className="flex h-screen items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-        <p className="text-slate-500 text-sm font-medium">Loading Intelligence Engine...</p>
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-black text-[#f4f4f6] font-sans flex flex-col">
+        <Navbar workspaceId={workspaceId} datasetId={datasetId} />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex items-center gap-3 text-[#9ca3af] bg-[#0c0d12] border border-white/10 px-6 py-4 rounded-full shadow-2xl">
+            <div className="w-5 h-5 rounded-full border-2 border-[#ff3c02] border-t-transparent animate-spin" />
+            <span className="text-sm font-semibold">Initializing Workspace Session...</span>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (loading && !dataset && analyses.length === 0 && insights.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-[#f4f4f6] font-sans flex flex-col">
+        <Navbar workspaceId={workspaceId} datasetId={datasetId} />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-4 text-center bg-[#0c0d12] border border-white/10 px-10 py-8 rounded-3xl shadow-2xl max-w-md">
+            <div className="w-12 h-12 rounded-2xl bg-[#ff3c02]/10 border border-[#ff3c02]/30 flex items-center justify-center text-[#ff3c02]">
+              <Sparkles className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white mb-1">Loading Intelligence Suite</h3>
+              <p className="text-xs text-[#9ca3af]">Connecting to analytical engines, neural forecasts, and executive reports...</p>
+            </div>
+            <div className="w-6 h-6 rounded-full border-2 border-[#ff3c02] border-t-transparent animate-spin mt-2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError && !dataset) {
+    return (
+      <div className="min-h-screen bg-black text-[#f4f4f6] font-sans flex flex-col">
+        <Navbar workspaceId={workspaceId} datasetId={datasetId} />
+        <div className="flex-1 p-8 max-w-3xl mx-auto w-full flex items-center justify-center">
+          <div className="p-8 bg-[#140b0b] border border-rose-500/30 text-rose-200 rounded-3xl shadow-2xl flex flex-col items-center text-center gap-4">
+            <AlertTriangle className="w-10 h-10 text-rose-400" />
+            <div>
+              <h3 className="text-lg font-bold text-white mb-1">Failed to Load Analytics Suite</h3>
+              <p className="text-xs text-rose-300/80 max-w-md">{fetchError}</p>
+            </div>
+            <button
+              onClick={() => fetchData()}
+              className="mt-2 px-5 py-2.5 rounded-full bg-[#ff3c02] hover:bg-[#fa7041] text-white text-xs font-bold transition-all shadow-lg shadow-[#ff3c02]/25"
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-[#f4f4f6] font-sans flex flex-col selection:bg-[#ff3c02] selection:text-white">
@@ -962,8 +1064,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Zero-hallucination trust badge */}
-        <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-300 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Strict Deterministic Grounding (No LLM Math)</span>
         </div>
       </div>
@@ -976,11 +1078,11 @@ export default function AnalyticsPage() {
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#fa7041]" />
                   Strategic Findings & Executive Interpretation
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs md:text-sm text-[#9ca3af] mt-1">
                   Insights synthesized directly from verified quantitative aggregations. Mathematical calculations are strictly deterministic.
                 </p>
               </div>
@@ -988,14 +1090,14 @@ export default function AnalyticsPage() {
               {/* Filters */}
               {insights.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 mr-1">
-                    <Filter className="w-3.5 h-3.5" /> Filter:
+                  <div className="flex items-center gap-1.5 text-xs text-[#9ca3af] mr-1">
+                    <Filter className="w-3.5 h-3.5 text-[#fa7041]" /> Filter:
                   </div>
 
                   <select
                     value={severityFilter}
                     onChange={(e) => setSeverityFilter(e.target.value)}
-                    className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-xs bg-[#0c0d12] border border-white/10 rounded-xl px-3 py-1.5 text-slate-200 shadow-sm focus:outline-none focus:border-[#ff3c02]"
                   >
                     <option value="all">All Severities</option>
                     <option value="critical">Critical</option>
@@ -1007,7 +1109,7 @@ export default function AnalyticsPage() {
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="text-xs bg-[#0c0d12] border border-white/10 rounded-xl px-3 py-1.5 text-slate-200 shadow-sm focus:outline-none focus:border-[#ff3c02]"
                     >
                       <option value="all">All Categories</option>
                       {availableCategories.map(cat => (
@@ -1021,25 +1123,25 @@ export default function AnalyticsPage() {
 
             {/* Empty State for Insights */}
             {insights.length === 0 ? (
-              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[350px]">
-                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+              <div className="bg-[#0c0d12] p-12 rounded-3xl shadow-2xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[350px]">
+                <div className="w-16 h-16 bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 rounded-2xl flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">No AI Business Insights Generated Yet</h3>
-                <p className="text-slate-500 mb-6 max-w-lg text-sm">
+                <h3 className="text-xl font-bold text-white mb-2">No AI Business Insights Generated Yet</h3>
+                <p className="text-[#9ca3af] mb-6 max-w-lg text-xs md:text-sm">
                   Run the insight engine to extract verified facts, compute trends, and generate strategic recommendations anchored to analytical evidence.
                 </p>
                 <button 
                   onClick={generateInsights} 
                   disabled={submittingInsights}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-semibold shadow-md flex items-center gap-2 text-sm disabled:opacity-50"
+                  className="bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white px-7 py-3 rounded-full transition-all font-bold shadow-lg shadow-[#ff3c02]/30 flex items-center gap-2 text-xs disabled:opacity-50 active:scale-98"
                 >
                   <Sparkles className={`w-4 h-4 ${submittingInsights ? 'animate-spin' : ''}`} />
                   {submittingInsights ? 'Generating Grounded Insights...' : 'Synthesize First Insights'}
                 </button>
               </div>
             ) : filteredInsights.length === 0 ? (
-              <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-sm">
+              <div className="bg-[#0c0d12] p-8 rounded-3xl border border-white/10 text-center text-[#9ca3af] text-xs">
                 No insights match the selected severity and category filters.
               </div>
             ) : (
@@ -1062,43 +1164,43 @@ export default function AnalyticsPage() {
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[#fa7041]" />
                   Natural Language Analytics & Data Querying
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs md:text-sm text-[#9ca3af] mt-1">
                   Ask conversational business questions. Computations are strictly executed using deterministic analytics engines.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Sandboxed Query Execution</span>
               </div>
             </div>
 
             {/* Search Prompt Input & Quick Pills */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+            <div className="bg-[#0c0d12] p-6 md:p-8 rounded-3xl shadow-2xl border border-white/10 space-y-4">
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleNlQuery();
                 }}
-                className="flex gap-2"
+                className="flex flex-col sm:flex-row gap-3"
               >
                 <div className="relative flex-1">
-                  <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Search className="w-5 h-5 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={nlQuestion}
                     onChange={(e) => setNlQuestion(e.target.value)}
                     placeholder="Ask anything (e.g. Which products generated the most revenue? Compare this quarter with previous quarter...)"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-slate-800 transition-all"
+                    className="w-full pl-12 pr-4 py-3 bg-[#060709] border border-white/10 rounded-2xl text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#ff3c02] focus:ring-1 focus:ring-[#ff3c02] transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={submittingNlQuery || !nlQuestion.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-3 rounded-xl font-medium text-sm flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                  className="bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] disabled:opacity-50 text-white px-7 py-3 rounded-full font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#ff3c02]/30 transition-all cursor-pointer active:scale-98"
                 >
                   {submittingNlQuery ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1110,9 +1212,9 @@ export default function AnalyticsPage() {
               </form>
 
               {/* Suggested Quick Prompt Pills */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <HelpCircle className="w-3.5 h-3.5" /> Try asking:
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider flex items-center gap-1.5 mr-1">
+                  <HelpCircle className="w-3.5 h-3.5 text-[#fa7041]" /> Try asking:
                 </span>
                 {[
                   "What was our revenue last month?",
@@ -1126,7 +1228,7 @@ export default function AnalyticsPage() {
                     key={idx}
                     type="button"
                     onClick={() => handleNlQuery(pill)}
-                    className="text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer"
+                    className="text-xs bg-[#14151b] hover:bg-[#ff3c02]/15 hover:text-white hover:border-[#ff3c02]/40 text-slate-300 px-3.5 py-1.5 rounded-full border border-white/10 transition-all cursor-pointer shadow-sm"
                   >
                     {pill}
                   </button>
@@ -1136,20 +1238,20 @@ export default function AnalyticsPage() {
 
             {/* Error Alert */}
             {nlError && (
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <div className="p-4 bg-[#1a0c0c] border border-rose-500/30 rounded-2xl text-rose-300 text-xs md:text-sm flex items-center gap-2.5 shadow-xl">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                 <span>{nlError}</span>
               </div>
             )}
 
             {/* Empty State before any query */}
             {!nlResult && !submittingNlQuery && !nlError && (
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[220px]">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3">
+              <div className="bg-[#0c0d12] p-10 rounded-3xl shadow-2xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[220px]">
+                <div className="w-12 h-12 bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 rounded-2xl flex items-center justify-center mb-3">
                   <MessageSquare className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">Interactive Conversational BI</h3>
-                <p className="text-xs text-slate-500 max-w-md">
+                <h3 className="text-base font-bold text-white mb-1">Interactive Conversational BI</h3>
+                <p className="text-xs text-[#9ca3af] max-w-md">
                   Type any business query or select a quick question above to run deterministic aggregations, produce markdown analysis, and generate interactive charts.
                 </p>
               </div>
@@ -1157,49 +1259,49 @@ export default function AnalyticsPage() {
 
             {/* Loading skeleton */}
             {submittingNlQuery && (
-              <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center space-y-3">
-                <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-                <p className="text-sm font-semibold text-slate-700">Validating query plan and executing deterministic data engine...</p>
-                <p className="text-xs text-slate-400">Enforcing zero-hallucination mathematical bounds</p>
+              <div className="bg-[#0c0d12] p-12 rounded-3xl border border-white/10 text-center flex flex-col items-center justify-center space-y-3 shadow-2xl">
+                <RefreshCw className="w-8 h-8 text-[#fa7041] animate-spin" />
+                <p className="text-sm font-semibold text-white">Validating query plan and executing deterministic data engine...</p>
+                <p className="text-xs text-[#9ca3af]">Enforcing zero-hallucination mathematical bounds</p>
               </div>
             )}
 
             {/* Result Container */}
             {nlResult && !submittingNlQuery && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
+              <div className="bg-[#0c0d12] rounded-3xl shadow-2xl border border-white/10 overflow-hidden divide-y divide-white/10">
                 {/* Header with question & operation badge */}
-                <div className="p-6 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="p-6 bg-[#14151b] flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                      <span className="text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
                         {nlResult.operation.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-[#9ca3af]">
                         {nlResult.interpreted_intent}
                       </span>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-lg font-bold text-white">
                       "{nlResult.question}"
                     </h3>
                   </div>
-                  <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1 self-start md:self-auto font-medium">
+                  <div className="text-xs text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 self-start md:self-auto font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Deterministic Math Verified</span>
                   </div>
                 </div>
 
                 {/* Narrative Answer Section */}
-                <div className="p-6">
-                  <div className="prose prose-slate max-w-none text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
+                <div className="p-6 md:p-8 bg-[#0c0d12]">
+                  <div className="prose prose-invert max-w-none text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
                     {nlResult.answer_markdown}
                   </div>
                 </div>
 
                 {/* Visual Chart Section if suggested */}
                 {nlResult.chart_suggestion && (
-                  <div className="p-6 bg-slate-50/30">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
-                      <BarChart3 className="w-4 h-4 text-indigo-600" />
+                  <div className="p-6 md:p-8 bg-[#14151b]/40">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-4 flex items-center gap-1.5">
+                      <BarChart3 className="w-4 h-4 text-[#fa7041]" />
                       Recommended Visualization: {nlResult.chart_suggestion.title || 'Analysis Chart'}
                     </h4>
 
@@ -1207,22 +1309,22 @@ export default function AnalyticsPage() {
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={nlResult.data} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                             <XAxis 
                               dataKey={nlResult.chart_suggestion.x_axis || nlResult.columns[0]} 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{ fill: '#64748b', fontSize: 12 }} 
+                              tick={{ fill: '#9ca3af', fontSize: 11 }} 
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{ fill: '#64748b', fontSize: 12 }} 
+                              tick={{ fill: '#9ca3af', fontSize: 11 }} 
                               tickFormatter={(v) => Number(v) >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
                             />
                             <Tooltip 
-                              cursor={{ fill: '#f8fafc' }}
-                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                              contentStyle={{ backgroundColor: '#0c0d12', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                               formatter={(val: any) => [Number(val).toLocaleString(), nlResult.chart_suggestion?.series_name || 'Value']}
                             />
                             <Bar 
@@ -1240,17 +1342,17 @@ export default function AnalyticsPage() {
 
                     {nlResult.chart_suggestion.type === 'comparison_cards' && (
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-white p-4 rounded-xl border border-slate-200">
-                          <div className="text-xs text-slate-500 uppercase font-semibold">Previous Period ({nlResult.chart_suggestion.previous_period})</div>
-                          <div className="text-2xl font-bold text-slate-800 mt-1">{nlResult.chart_suggestion.previous_value}</div>
+                        <div className="bg-[#14151b] p-4 rounded-2xl border border-white/10">
+                          <div className="text-[11px] text-[#9ca3af] uppercase font-semibold">Previous Period ({nlResult.chart_suggestion.previous_period})</div>
+                          <div className="text-2xl font-bold text-white mt-1">{nlResult.chart_suggestion.previous_value}</div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-slate-200">
-                          <div className="text-xs text-slate-500 uppercase font-semibold">Current Period ({nlResult.chart_suggestion.current_period})</div>
-                          <div className="text-2xl font-bold text-slate-800 mt-1">{nlResult.chart_suggestion.current_value}</div>
+                        <div className="bg-[#14151b] p-4 rounded-2xl border border-white/10">
+                          <div className="text-[11px] text-[#9ca3af] uppercase font-semibold">Current Period ({nlResult.chart_suggestion.current_period})</div>
+                          <div className="text-2xl font-bold text-white mt-1">{nlResult.chart_suggestion.current_value}</div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/30">
-                          <div className="text-xs text-indigo-700 uppercase font-semibold">Net Variance & Change</div>
-                          <div className="text-2xl font-bold text-indigo-900 mt-1">{nlResult.chart_suggestion.delta} ({nlResult.chart_suggestion.pct_change})</div>
+                        <div className="bg-[#ff3c02]/10 p-4 rounded-2xl border border-[#ff3c02]/30">
+                          <div className="text-[11px] text-[#fa7041] uppercase font-semibold">Net Variance & Change</div>
+                          <div className="text-2xl font-bold text-[#ffba86] mt-1">{nlResult.chart_suggestion.delta} ({nlResult.chart_suggestion.pct_change})</div>
                         </div>
                       </div>
                     )}
@@ -1259,14 +1361,14 @@ export default function AnalyticsPage() {
 
                 {/* Structured Data Table */}
                 {nlResult.data && nlResult.data.length > 0 && (
-                  <div className="p-6">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
-                      <Database className="w-4 h-4 text-slate-500" />
+                  <div className="p-6 md:p-8">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-3 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-[#fa7041]" />
                       Verified Data Records ({nlResult.data.length} rows)
                     </h4>
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                        <thead className="bg-slate-50 text-slate-700 font-semibold uppercase tracking-wider">
+                    <div className="overflow-x-auto border border-white/10 rounded-2xl">
+                      <table className="min-w-full divide-y divide-white/10 text-left text-xs">
+                        <thead className="bg-[#14151b] text-[#9ca3af] font-semibold uppercase tracking-wider">
                           <tr>
                             {nlResult.columns.map((col) => (
                               <th key={col} className="px-4 py-3">
@@ -1275,9 +1377,9 @@ export default function AnalyticsPage() {
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                        <tbody className="divide-y divide-white/5 bg-[#0c0d12] text-slate-200">
                           {nlResult.data.map((row, rIdx) => (
-                            <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors">
+                            <tr key={rIdx} className="hover:bg-white/[0.02] transition-colors">
                               {nlResult.columns.map((col) => (
                                 <td key={col} className="px-4 py-2.5 font-medium">
                                   {typeof row[col] === 'number' ? Number(row[col]).toLocaleString() : String(row[col])}
@@ -1293,16 +1395,16 @@ export default function AnalyticsPage() {
 
                 {/* Suggested Follow-up Questions */}
                 {nlResult.suggested_followups && nlResult.suggested_followups.length > 0 && (
-                  <div className="p-6 bg-slate-50/50 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1 mr-1">
-                      <CornerDownRight className="w-3.5 h-3.5" /> Next Steps:
+                  <div className="p-6 bg-[#14151b] flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-[#9ca3af] flex items-center gap-1 mr-1">
+                      <CornerDownRight className="w-3.5 h-3.5 text-[#fa7041]" /> Next Steps:
                     </span>
                     {nlResult.suggested_followups.map((fUp, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleNlQuery(fUp)}
-                        className="text-xs bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                        className="text-xs bg-[#0c0d12] hover:bg-[#ff3c02]/15 hover:text-white hover:border-[#ff3c02]/40 text-slate-300 px-3.5 py-1.5 rounded-full border border-white/10 transition-all cursor-pointer shadow-sm"
                       >
                         {fUp}
                       </button>
@@ -1319,27 +1421,27 @@ export default function AnalyticsPage() {
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-[#fa7041]" />
                   Statistical Time-Series Forecasting
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs md:text-sm text-[#9ca3af] mt-1">
                   Forward-looking projections with empirical backtesting, out-of-sample validation error, and confidence intervals.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Empirical Backtesting Verified</span>
               </div>
             </div>
 
             {/* If dataset lacks temporal suitability */}
             {forecastSchema && !forecastSchema.is_forecastable ? (
-              <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-amber-500/10 border border-amber-500/30 p-6 rounded-3xl flex items-start gap-3 shadow-xl">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="text-sm font-bold text-amber-900">Insufficient Temporal Data For Forecasting</h3>
-                  <p className="text-xs text-amber-700 mt-1">
+                  <h3 className="text-sm font-bold text-amber-300">Insufficient Temporal Data For Forecasting</h3>
+                  <p className="text-xs text-amber-200/80 mt-1">
                     This dataset does not contain valid parseable date or timestamp columns. Forecasting requires chronological observations to construct a time series.
                   </p>
                 </div>
@@ -1347,16 +1449,16 @@ export default function AnalyticsPage() {
             ) : (
               <>
                 {/* Control Bar: Target Metric, Horizon, Model Selection */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div className="bg-[#0c0d12] p-6 rounded-3xl shadow-2xl border border-white/10">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                         Target Metric
                       </label>
                       <select
                         value={selectedForecastMetric}
                         onChange={(e) => setSelectedForecastMetric(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        className="w-full bg-[#060709] border border-white/10 rounded-xl px-3 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-[#ff3c02] font-medium"
                       >
                         {forecastSchema?.metric_columns?.map((m: string) => (
                           <option key={m} value={m}>{m.replace('_', ' ').toUpperCase()}</option>
@@ -1367,13 +1469,13 @@ export default function AnalyticsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                         Forecast Horizon
                       </label>
                       <select
                         value={forecastHorizon}
                         onChange={(e) => setForecastHorizon(Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        className="w-full bg-[#060709] border border-white/10 rounded-xl px-3 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-[#ff3c02] font-medium"
                       >
                         <option value={3}>3 Periods Forward</option>
                         <option value={6}>6 Periods Forward</option>
@@ -1383,13 +1485,13 @@ export default function AnalyticsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                         Forecasting Model
                       </label>
                       <select
                         value={selectedForecastModel}
                         onChange={(e) => setSelectedForecastModel(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        className="w-full bg-[#060709] border border-white/10 rounded-xl px-3 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-[#ff3c02] font-medium"
                       >
                         <option value="auto">Auto (Best Backtest RMSE)</option>
                         <option value="holt_linear">Holt's Linear Exponential</option>
@@ -1402,7 +1504,7 @@ export default function AnalyticsPage() {
                       <button
                         onClick={runForecast}
                         disabled={loadingForecast}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                        className="w-full bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/30 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer active:scale-98"
                       >
                         <RefreshCw className={`w-4 h-4 ${loadingForecast ? 'animate-spin' : ''}`} />
                         <span>{loadingForecast ? 'Computing Forecast...' : 'Generate Forecast'}</span>
@@ -1412,25 +1514,25 @@ export default function AnalyticsPage() {
                 </div>
 
                 {forecastError && (
-                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <div className="p-4 bg-[#1a0c0c] border border-rose-500/30 rounded-2xl text-rose-300 text-xs md:text-sm flex items-center gap-2 shadow-xl">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
                     <span>{forecastError}</span>
                   </div>
                 )}
 
                 {/* Empty State before running forecast */}
                 {!forecastResult && !loadingForecast && !forecastError && (
-                  <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
-                    <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                  <div className="bg-[#0c0d12] p-12 rounded-3xl shadow-2xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="w-14 h-14 bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 rounded-2xl flex items-center justify-center mb-4">
                       <TrendingUp className="w-7 h-7" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">Time-Series Forecasting Ready</h3>
-                    <p className="text-slate-500 max-w-md text-xs mb-6">
+                    <h3 className="text-lg font-bold text-white mb-1">Time-Series Forecasting Ready</h3>
+                    <p className="text-[#9ca3af] max-w-md text-xs mb-6">
                       Select your target metric and horizon above, then click Generate Forecast to compute statistical projections with 80% and 95% confidence bounds.
                     </p>
                     <button
                       onClick={runForecast}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                      className="bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/30 transition-all cursor-pointer active:scale-98"
                     >
                       Run Initial Forecast
                     </button>
@@ -1442,67 +1544,67 @@ export default function AnalyticsPage() {
                   <div className="space-y-6">
                     {/* Performance & Model Info Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Model</div>
-                        <div className="text-base font-bold text-slate-900 mt-1 truncate">{forecastResult.selected_model}</div>
-                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                      <div className="bg-[#0c0d12] p-5 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Selected Model</div>
+                        <div className="text-base font-bold text-white mt-1 truncate">{forecastResult.selected_model}</div>
+                        <div className="text-xs text-[#fa7041] font-medium mt-1">
                           Horizon: {forecastResult.horizon} periods ({forecastResult.frequency})
                         </div>
                       </div>
 
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Validation RMSE</div>
-                        <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                      <div className="bg-[#0c0d12] p-5 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Validation RMSE</div>
+                        <div className="text-2xl font-extrabold text-white mt-1">
                           {forecastResult.validation_metrics?.rmse != null 
                             ? `$${Number(forecastResult.validation_metrics.rmse).toLocaleString()}` 
                             : 'N/A'}
                         </div>
-                        <div className="text-xs text-slate-500 font-medium mt-1">
+                        <div className="text-xs text-[#9ca3af] font-medium mt-1">
                           Holdout error ({forecastResult.validation_metrics?.holdout_periods} test periods)
                         </div>
                       </div>
 
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Validation MAE</div>
-                        <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                      <div className="bg-[#0c0d12] p-5 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Validation MAE</div>
+                        <div className="text-2xl font-extrabold text-white mt-1">
                           {forecastResult.validation_metrics?.mae != null 
                             ? `$${Number(forecastResult.validation_metrics.mae).toLocaleString()}` 
                             : 'N/A'}
                         </div>
-                        <div className="text-xs text-slate-500 font-medium mt-1">Mean absolute deviation</div>
+                        <div className="text-xs text-[#9ca3af] font-medium mt-1">Mean absolute deviation</div>
                       </div>
 
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-500">MAPE Accuracy</div>
-                        <div className="text-2xl font-extrabold text-emerald-600 mt-1">
+                      <div className="bg-[#0c0d12] p-5 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">MAPE Accuracy</div>
+                        <div className="text-2xl font-extrabold text-emerald-400 mt-1">
                           {forecastResult.validation_metrics?.mape_pct != null 
                             ? `${Number(forecastResult.validation_metrics.mape_pct).toFixed(1)}%` 
                             : 'N/A'}
                         </div>
-                        <div className="text-xs text-slate-500 font-medium mt-1">Mean percentage error</div>
+                        <div className="text-xs text-[#9ca3af] font-medium mt-1">Mean percentage error</div>
                       </div>
                     </div>
 
                     {/* Interactive Forecast Chart */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-[#0c0d12] p-6 rounded-3xl border border-white/10 shadow-2xl">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
                         <div>
-                          <h3 className="text-base font-bold text-slate-900">
+                          <h3 className="text-base font-bold text-white">
                             Historical vs. Projected {forecastResult.target_column.replace('_', ' ').toUpperCase()}
                           </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Solid indigo line displays historical recordings; dashed emerald line shows {forecastResult.horizon}-period projections with shaded 95% confidence intervals.
+                          <p className="text-xs text-[#9ca3af] mt-0.5">
+                            Solid orange line displays historical recordings; dashed amber line shows {forecastResult.horizon}-period projections with shaded 95% confidence intervals.
                           </p>
                         </div>
                         <div className="flex items-center gap-4 text-xs">
-                          <span className="flex items-center gap-1.5 text-slate-700">
-                            <span className="w-3 h-0.5 bg-indigo-600 inline-block"></span> Historical
+                          <span className="flex items-center gap-1.5 text-slate-300">
+                            <span className="w-3 h-0.5 bg-[#fa7041] inline-block"></span> Historical
                           </span>
-                          <span className="flex items-center gap-1.5 text-slate-700">
-                            <span className="w-3 h-0.5 bg-emerald-500 border-dashed border-t-2 border-emerald-500 inline-block"></span> Forecast
+                          <span className="flex items-center gap-1.5 text-slate-300">
+                            <span className="w-3 h-0.5 bg-[#ffba86] border-dashed border-t-2 border-[#ffba86] inline-block"></span> Forecast
                           </span>
-                          <span className="flex items-center gap-1.5 text-slate-700">
-                            <span className="w-3 h-3 bg-indigo-100 rounded-sm inline-block"></span> 95% Confidence
+                          <span className="flex items-center gap-1.5 text-slate-300">
+                            <span className="w-3 h-3 bg-[#ff3c02]/20 border border-[#ff3c02]/40 rounded-sm inline-block"></span> 95% Confidence
                           </span>
                         </div>
                       </div>
@@ -1510,21 +1612,21 @@ export default function AnalyticsPage() {
                       <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart data={forecastChartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                             <XAxis 
                               dataKey="date" 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{ fill: '#64748b', fontSize: 11 }} 
+                              tick={{ fill: '#9ca3af', fontSize: 11 }} 
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{ fill: '#64748b', fontSize: 11 }} 
+                              tick={{ fill: '#9ca3af', fontSize: 11 }} 
                               tickFormatter={(v) => Number(v) >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
                             />
                             <Tooltip 
-                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              contentStyle={{ backgroundColor: '#0c0d12', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                               formatter={(val: any, name: any) => {
                                 if (Array.isArray(val)) {
                                   return [`$${Number(val[0]).toLocaleString()} - $${Number(val[1]).toLocaleString()}`, '95% Confidence Band'];
@@ -1536,24 +1638,24 @@ export default function AnalyticsPage() {
                             <Area 
                               type="monotone" 
                               dataKey="confidence_range" 
-                              fill="#e0e7ff" 
+                              fill="#ff3c02" 
                               stroke="transparent" 
-                              fillOpacity={0.6} 
+                              fillOpacity={0.12} 
                             />
                             <Line 
                               type="monotone" 
                               dataKey="historical" 
-                              stroke="#4f46e5" 
+                              stroke="#fa7041" 
                               strokeWidth={2.5} 
-                              dot={{ r: 3, fill: '#4f46e5' }} 
+                              dot={{ r: 3, fill: '#fa7041' }} 
                             />
                             <Line 
                               type="monotone" 
                               dataKey="forecast" 
-                              stroke="#10b981" 
+                              stroke="#ffba86" 
                               strokeWidth={2.5} 
                               strokeDasharray="5 5" 
-                              dot={{ r: 4, fill: '#10b981' }} 
+                              dot={{ r: 4, fill: '#ffba86' }} 
                             />
                           </ComposedChart>
                         </ResponsiveContainer>
@@ -1561,15 +1663,15 @@ export default function AnalyticsPage() {
                     </div>
 
                     {/* Projections Table */}
-                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-                      <div className="p-4 bg-slate-50 border-b border-slate-200">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    <div className="bg-[#0c0d12] rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                      <div className="p-4 bg-[#14151b] border-b border-white/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                           Forecast Values & Uncertainty Intervals
                         </h4>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                          <thead className="bg-slate-50/50 text-slate-600 font-semibold uppercase tracking-wider">
+                        <table className="min-w-full divide-y divide-white/10 text-left text-xs">
+                          <thead className="bg-[#14151b]/50 text-[#9ca3af] font-semibold uppercase tracking-wider">
                             <tr>
                               <th className="px-4 py-3">Horizon Period</th>
                               <th className="px-4 py-3">Projected Date</th>
@@ -1578,14 +1680,14 @@ export default function AnalyticsPage() {
                               <th className="px-4 py-3">95% Confidence Range</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700">
+                          <tbody className="divide-y divide-white/5 bg-[#0c0d12] text-slate-200">
                             {forecastResult.forecast_points.map((pt) => (
-                              <tr key={pt.date} className="hover:bg-slate-50/60 transition-colors">
-                                <td className="px-4 py-2.5 font-bold text-indigo-600">+{pt.period_index}</td>
+                              <tr key={pt.date} className="hover:bg-white/[0.02] transition-colors">
+                                <td className="px-4 py-2.5 font-bold text-[#fa7041]">+{pt.period_index}</td>
                                 <td className="px-4 py-2.5 font-medium">{pt.date}</td>
-                                <td className="px-4 py-2.5 font-bold text-slate-900">${pt.forecast.toLocaleString()}</td>
-                                <td className="px-4 py-2.5 text-slate-600">${pt.lower_bound_80.toLocaleString()} - ${pt.upper_bound_80.toLocaleString()}</td>
-                                <td className="px-4 py-2.5 text-slate-600">${pt.lower_bound_95.toLocaleString()} - ${pt.upper_bound_95.toLocaleString()}</td>
+                                <td className="px-4 py-2.5 font-bold text-white">${pt.forecast.toLocaleString()}</td>
+                                <td className="px-4 py-2.5 text-slate-400">${pt.lower_bound_80.toLocaleString()} - ${pt.upper_bound_80.toLocaleString()}</td>
+                                <td className="px-4 py-2.5 text-slate-400">${pt.lower_bound_95.toLocaleString()} - ${pt.upper_bound_95.toLocaleString()}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1595,24 +1697,24 @@ export default function AnalyticsPage() {
 
                     {/* Assumptions & Limitations */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
-                          <Info className="w-4 h-4 text-indigo-600" />
+                      <div className="bg-[#14151b] p-5 rounded-2xl border border-white/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+                          <Info className="w-4 h-4 text-[#fa7041]" />
                           Model Assumptions
                         </h4>
-                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                        <ul className="text-xs text-[#9ca3af] space-y-1.5 list-disc list-inside">
                           {forecastResult.assumptions?.map((assm, aIdx) => (
                             <li key={aIdx}>{assm}</li>
                           ))}
                         </ul>
                       </div>
 
-                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <div className="bg-[#14151b] p-5 rounded-2xl border border-white/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-400" />
                           Limitations & Risk Boundaries
                         </h4>
-                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                        <ul className="text-xs text-[#9ca3af] space-y-1.5 list-disc list-inside">
                           {forecastResult.limitations?.map((lim, lIdx) => (
                             <li key={lIdx}>{lim}</li>
                           ))}
@@ -1631,76 +1733,76 @@ export default function AnalyticsPage() {
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <AlertOctagon className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                  <AlertOctagon className="w-5 h-5 text-[#fa7041]" />
                   Statistically Grounded Anomaly & Outlier Detection
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs md:text-sm text-[#9ca3af] mt-1">
                   Parametric Z-Score, Tukey IQR fences, and unsupervised Isolation Forest with explainable business classifications.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Zero-False-Accusation Guarantee (Outliers ≠ Fraud)</span>
               </div>
             </div>
 
             {/* Metric KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Flagged</div>
-                <div className="text-2xl font-extrabold text-slate-900 mt-1">{anomalyMetrics.total}</div>
-                <div className="text-xs text-slate-500 mt-1">Across all algorithms</div>
+              <div className="bg-[#0c0d12] p-5 rounded-2xl border border-white/10 shadow-xl">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Total Flagged</div>
+                <div className="text-2xl font-extrabold text-white mt-1">{anomalyMetrics.total}</div>
+                <div className="text-xs text-[#9ca3af] mt-1">Across all algorithms</div>
               </div>
 
-              <div className="bg-rose-50/50 p-5 rounded-2xl border border-rose-200 shadow-2xs">
-                <div className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+              <div className="bg-rose-500/10 p-5 rounded-2xl border border-rose-500/30 shadow-xl">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
                   Confirmed Issues
                 </div>
-                <div className="text-2xl font-extrabold text-rose-900 mt-1">{anomalyMetrics.confirmedIssues}</div>
-                <div className="text-xs text-rose-600 mt-1">Invariants (e.g. negative values)</div>
+                <div className="text-2xl font-extrabold text-rose-300 mt-1">{anomalyMetrics.confirmedIssues}</div>
+                <div className="text-xs text-rose-400/80 mt-1">Invariants (e.g. negative values)</div>
               </div>
 
-              <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-200 shadow-2xs">
-                <div className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <div className="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/30 shadow-xl">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                   Detected Anomalies
                 </div>
-                <div className="text-2xl font-extrabold text-amber-900 mt-1">{anomalyMetrics.detectedAnomalies}</div>
-                <div className="text-xs text-amber-600 mt-1">Volume drops & multivariate pattern</div>
+                <div className="text-2xl font-extrabold text-amber-300 mt-1">{anomalyMetrics.detectedAnomalies}</div>
+                <div className="text-xs text-amber-400/80 mt-1">Volume drops & multivariate pattern</div>
               </div>
 
-              <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-200 shadow-2xs">
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+              <div className="bg-[#ff3c02]/10 p-5 rounded-2xl border border-[#ff3c02]/30 shadow-xl">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#fa7041] flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#fa7041]" />
                   Statistical Outliers
                 </div>
-                <div className="text-2xl font-extrabold text-indigo-900 mt-1">{anomalyMetrics.statisticalOutliers}</div>
-                <div className="text-xs text-indigo-600 mt-1">Legitimate high-value VIP spikes</div>
+                <div className="text-2xl font-extrabold text-[#ffba86] mt-1">{anomalyMetrics.statisticalOutliers}</div>
+                <div className="text-xs text-[#fa7041]/80 mt-1">Legitimate high-value VIP spikes</div>
               </div>
 
-              <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-200 shadow-2xs">
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="bg-emerald-500/10 p-5 rounded-2xl border border-emerald-500/30 shadow-xl">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   Triaged / Resolved
                 </div>
-                <div className="text-2xl font-extrabold text-emerald-900 mt-1">{anomalyMetrics.reviewedOrDismissed}</div>
-                <div className="text-xs text-emerald-600 mt-1">Reviewed or dismissed</div>
+                <div className="text-2xl font-extrabold text-emerald-300 mt-1">{anomalyMetrics.reviewedOrDismissed}</div>
+                <div className="text-xs text-emerald-400/80 mt-1">Reviewed or dismissed</div>
               </div>
             </div>
 
             {/* Scan Controls Bar */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="bg-[#0c0d12] p-6 rounded-3xl shadow-2xl border border-white/10">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                     Target Numeric Dimension
                   </label>
                   <select
                     value={anomalyTargetCol}
                     onChange={(e) => setAnomalyTargetCol(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-[#060709] border border-white/10 rounded-xl px-3 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-[#ff3c02] font-medium"
                   >
                     {numericColumns.map((col: string) => (
                       <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
@@ -1709,13 +1811,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                     Detection Algorithm
                   </label>
                   <select
                     value={anomalyMethod}
                     onChange={(e) => setAnomalyMethod(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-[#060709] border border-white/10 rounded-xl px-3 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-[#ff3c02] font-medium"
                   >
                     <option value="all">All Methods (Z-Score + IQR + Isolation Forest)</option>
                     <option value="zscore">Z-Score (Gaussian Standard Deviation Bounds)</option>
@@ -1728,7 +1830,7 @@ export default function AnalyticsPage() {
                   <button
                     onClick={runAnomalyDetection}
                     disabled={runningAnomalyDetect}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    className="w-full bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/30 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer active:scale-98"
                   >
                     <RefreshCw className={`w-4 h-4 ${runningAnomalyDetect ? 'animate-spin' : ''}`} />
                     <span>{runningAnomalyDetect ? 'Running Statistical & ML Scans...' : 'Scan For Anomalies'}</span>
@@ -1738,53 +1840,53 @@ export default function AnalyticsPage() {
             </div>
 
             {anomalyError && (
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <div className="p-4 bg-[#1a0c0c] border border-rose-500/30 rounded-2xl text-rose-300 text-xs md:text-sm flex items-center gap-2 shadow-xl">
+                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
                 <span>{anomalyError}</span>
               </div>
             )}
 
             {/* Triage & Nature Filters Bar */}
             {anomalies.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-[#14151b] p-4 rounded-2xl border border-white/10">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Classification:</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mr-1">Classification:</span>
                   <button
                     onClick={() => setAnomalyNatureFilter('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                       anomalyNatureFilter === 'all'
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        ? 'bg-white text-black shadow-md'
+                        : 'bg-[#0c0d12] text-slate-300 border border-white/10 hover:border-white/25'
                     }`}
                   >
                     All ({anomalies.length})
                   </button>
                   <button
                     onClick={() => setAnomalyNatureFilter('confirmed_business_issue')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                       anomalyNatureFilter === 'confirmed_business_issue'
-                        ? 'bg-rose-600 text-white shadow-2xs'
-                        : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
+                        ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30'
+                        : 'bg-[#0c0d12] text-rose-400 border border-rose-500/30 hover:bg-rose-500/10'
                     }`}
                   >
                     Confirmed Issues ({anomalyMetrics.confirmedIssues})
                   </button>
                   <button
                     onClick={() => setAnomalyNatureFilter('detected_anomaly')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                       anomalyNatureFilter === 'detected_anomaly'
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
+                        : 'bg-[#0c0d12] text-amber-400 border border-amber-500/30 hover:bg-amber-500/10'
                     }`}
                   >
                     Detected Anomalies ({anomalyMetrics.detectedAnomalies})
                   </button>
                   <button
                     onClick={() => setAnomalyNatureFilter('statistical_outlier')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                       anomalyNatureFilter === 'statistical_outlier'
-                        ? 'bg-indigo-600 text-white shadow-2xs'
-                        : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'
+                        ? 'bg-gradient-to-r from-[#ff3c02] to-[#fa7041] text-white shadow-md shadow-[#ff3c02]/30'
+                        : 'bg-[#0c0d12] text-[#fa7041] border border-[#ff3c02]/30 hover:bg-[#ff3c02]/10'
                     }`}
                   >
                     Statistical Outliers ({anomalyMetrics.statisticalOutliers})
@@ -1792,11 +1894,11 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Triage:</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#9ca3af]">Triage:</span>
                   <select
                     value={anomalyStatusFilter}
                     onChange={(e) => setAnomalyStatusFilter(e.target.value)}
-                    className="bg-white border border-slate-200 text-xs font-medium text-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="bg-[#0c0d12] border border-white/10 text-xs font-medium text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#ff3c02]"
                   >
                     <option value="all">All Statuses</option>
                     <option value="open">Open Only</option>
@@ -1809,17 +1911,17 @@ export default function AnalyticsPage() {
 
             {/* Empty state when no anomalies */}
             {anomalies.length === 0 && !runningAnomalyDetect && (
-              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
-                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+              <div className="bg-[#0c0d12] p-12 rounded-3xl shadow-2xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-14 h-14 bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 rounded-2xl flex items-center justify-center mb-4">
                   <AlertOctagon className="w-7 h-7" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-1">Anomaly Detection Engine Ready</h3>
-                <p className="text-slate-500 max-w-md text-xs mb-6">
+                <h3 className="text-lg font-bold text-white mb-1">Anomaly Detection Engine Ready</h3>
+                <p className="text-[#9ca3af] max-w-md text-xs mb-6">
                   Run a scan to evaluate statistical outlier bounds (Z-Score & IQR) and multidimensional Isolation Forest paths without false fraud accusations.
                 </p>
                 <button
                   onClick={runAnomalyDetection}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                  className="bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:from-[#ff4d15] hover:to-[#ff8152] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/30 transition-all cursor-pointer active:scale-98"
                 >
                   Scan Dataset Now
                 </button>
@@ -1837,14 +1939,14 @@ export default function AnalyticsPage() {
                   return (
                     <div
                       key={item.id}
-                      className={`bg-white rounded-2xl border p-6 shadow-sm transition-all hover:shadow-md ${
+                      className={`bg-[#0c0d12] rounded-3xl border p-6 shadow-xl transition-all hover:border-[#ff3c02]/40 ${
                         item.status === 'dismissed' 
-                          ? 'opacity-60 border-slate-200 bg-slate-50/50' 
+                          ? 'opacity-60 border-white/5 bg-[#0c0d12]/50' 
                           : isConfirmed
-                            ? 'border-rose-200 ring-1 ring-rose-100'
+                            ? 'border-rose-500/40 bg-rose-500/[0.03]'
                             : isOutlier
-                              ? 'border-indigo-200'
-                              : 'border-amber-200'
+                              ? 'border-[#ff3c02]/30 bg-[#ff3c02]/[0.02]'
+                              : 'border-amber-500/30 bg-amber-500/[0.02]'
                       }`}
                     >
                       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -1852,44 +1954,44 @@ export default function AnalyticsPage() {
                           {/* Badges row */}
                           <div className="flex flex-wrap items-center gap-2">
                             {isConfirmed && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
                                 Confirmed Business Issue
                               </span>
                             )}
                             {isAnomaly && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                                 Detected Anomaly
                               </span>
                             )}
                             {isOutlier && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
+                                <TrendingUp className="w-3.5 h-3.5 text-[#fa7041]" />
                                 Statistical Outlier (Non-Defective)
                               </span>
                             )}
 
-                            <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 uppercase">
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/5 border border-white/10 text-slate-300 uppercase">
                               {item.method.replace('_', ' ')}
                             </span>
 
                             {item.row_index != null && (
-                              <span className="px-2.5 py-0.5 rounded-md text-xs font-mono bg-slate-100 text-slate-600">
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-white/5 border border-white/10 text-slate-300">
                                 Row #{item.row_index}
                               </span>
                             )}
 
-                            <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
-                              Metric: <strong className="font-semibold">{item.column_name}</strong>
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/5 border border-white/10 text-slate-300">
+                              Metric: <strong className="font-semibold text-white">{item.column_name}</strong>
                             </span>
 
-                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold ${
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                               item.status === 'reviewed' 
-                                ? 'bg-emerald-100 text-emerald-800' 
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
                                 : item.status === 'dismissed' 
-                                  ? 'bg-slate-200 text-slate-700' 
-                                  : 'bg-rose-100 text-rose-800'
+                                  ? 'bg-white/5 text-slate-400 border border-white/10' 
+                                  : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                             }`}>
                               Status: {item.status.toUpperCase()}
                             </span>
@@ -1897,16 +1999,16 @@ export default function AnalyticsPage() {
 
                           {/* Title & Business Explanation */}
                           <div>
-                            <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
-                            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{item.explanation}</p>
+                            <h3 className="text-base font-bold text-white">{item.title}</h3>
+                            <p className="text-sm text-slate-300 mt-1 leading-relaxed">{item.explanation}</p>
                           </div>
 
                           {/* Contextual dimension tags if available */}
                           {item.details?.row_context && Object.keys(item.details.row_context).length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-1">
                               {Object.entries(item.details.row_context).map(([k, v]) => (
-                                <span key={k} className="text-xs bg-slate-50 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md">
-                                  <strong className="text-slate-800 capitalize">{k.replace('_', ' ')}:</strong> {String(v)}
+                                <span key={k} className="text-xs bg-[#14151b] border border-white/10 text-slate-300 px-2.5 py-0.5 rounded-xl">
+                                  <strong className="text-white capitalize">{k.replace('_', ' ')}:</strong> {String(v)}
                                 </span>
                               ))}
                             </div>
@@ -1914,16 +2016,16 @@ export default function AnalyticsPage() {
                         </div>
 
                         {/* Observed vs Expected Baseline & Triage Controls */}
-                        <div className="flex lg:flex-col items-end justify-between lg:justify-start gap-4 lg:min-w-[200px] border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-6">
+                        <div className="flex lg:flex-col items-end justify-between lg:justify-start gap-4 lg:min-w-[200px] border-t lg:border-t-0 lg:border-l border-white/10 pt-3 lg:pt-0 lg:pl-6">
                           <div className="text-right">
-                            <div className="text-xs text-slate-500 font-medium">Observed vs Expected</div>
-                            <div className="text-lg font-extrabold text-slate-900">
+                            <div className="text-xs text-[#9ca3af] font-medium">Observed vs Expected</div>
+                            <div className="text-lg font-extrabold text-white">
                               ${item.observed_value.toLocaleString()}
                             </div>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-[#9ca3af]">
                               Baseline: ${item.expected_value.toLocaleString()}
                             </div>
-                            <div className="text-xs text-indigo-600 font-semibold mt-1">
+                            <div className="text-xs text-[#fa7041] font-semibold mt-1">
                               Score: {Math.round(item.score * 100)}% Confidence
                             </div>
                           </div>
@@ -1935,7 +2037,7 @@ export default function AnalyticsPage() {
                                 <button
                                   onClick={() => updateAnomalyStatus(item.id, 'reviewed')}
                                   title="Mark as reviewed"
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-pointer"
                                 >
                                   <Check className="w-3.5 h-3.5" />
                                   <span>Review</span>
@@ -1943,7 +2045,7 @@ export default function AnalyticsPage() {
                                 <button
                                   onClick={() => updateAnomalyStatus(item.id, 'dismissed')}
                                   title="Dismiss anomaly"
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer"
+                                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
                                 >
                                   <EyeOff className="w-3.5 h-3.5" />
                                   <span>Dismiss</span>
@@ -1953,7 +2055,7 @@ export default function AnalyticsPage() {
                               <button
                                 onClick={() => updateAnomalyStatus(item.id, 'open')}
                                 title="Re-open anomaly"
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+                                className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
                               >
                                 Re-open
                               </button>
@@ -1968,33 +2070,33 @@ export default function AnalyticsPage() {
             )}
 
             {/* Methodology & Limitations Box */}
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#0c0d12] p-6 rounded-3xl border border-white/10 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-xl">
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#fa7041]" />
                   Z-Score Parametric Model
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-[#9ca3af] leading-relaxed">
                   Evaluates observations against mean and standard deviation (|z| &gt; 2.5). Invariants like negative revenues are immediately escalated.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-indigo-600" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#fa7041]" />
                   Tukey's IQR Fences
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-[#9ca3af] leading-relaxed">
                   Distribution-free quartile spread [Q1 - 1.5×IQR, Q3 + 1.5×IQR]. Robust against heavy skewness and extreme tail distortion.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-indigo-600" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#fa7041]" />
                   Isolation Forest ML
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-[#9ca3af] leading-relaxed">
                   Unsupervised decision tree partitioning. Measures structural isolation across multiple continuous dimensions simultaneously.
                 </p>
               </div>
@@ -2007,31 +2109,32 @@ export default function AnalyticsPage() {
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#fa7041]" />
                   Customer & Product Segmentation Suite
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[#9ca3af]">
                   Behavioral RFM quintiles, multidimensional K-Means with Silhouette validation, and Pareto ABC inventory analysis.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs text-slate-300 bg-[#0c0d12] border border-white/10 px-3 py-1.5 rounded-full">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Deterministic Behavioral & Statistical Clustering</span>
               </div>
             </div>
 
             {/* Controls Bar */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="bg-[#0c0d12] p-6 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                     Methodology
                   </label>
                   <select
                     value={selectedSegMethod}
                     onChange={(e) => setSelectedSegMethod(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-[#ff3c02]/60 font-medium"
                   >
                     <option value="auto">Auto (Smart Schema Detect)</option>
                     <option value="rfm">RFM Customer Segmentation</option>
@@ -2041,13 +2144,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                     Entity Identifier
                   </label>
                   <select
                     value={selectedSegEntity}
                     onChange={(e) => setSelectedSegEntity(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-[#ff3c02]/60 font-medium"
                   >
                     {segSchema?.entity_columns?.map((col: string) => (
                       <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
@@ -2058,13 +2161,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                     Monetary / Spend Metric
                   </label>
                   <select
                     value={selectedSegMonetary}
                     onChange={(e) => setSelectedSegMonetary(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-[#ff3c02]/60 font-medium"
                   >
                     {segSchema?.monetary_columns?.map((col: string) => (
                       <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
@@ -2076,13 +2179,13 @@ export default function AnalyticsPage() {
 
                 {selectedSegMethod === 'rfm' || selectedSegMethod === 'auto' ? (
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                       Date Column (Recency)
                     </label>
                     <select
                       value={selectedSegDate}
                       onChange={(e) => setSelectedSegDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-[#ff3c02]/60 font-medium"
                     >
                       {segSchema?.date_columns?.map((col: string) => (
                         <option key={col} value={col}>{col.replace('_', ' ').toUpperCase()}</option>
@@ -2093,13 +2196,13 @@ export default function AnalyticsPage() {
                   </div>
                 ) : selectedSegMethod === 'kmeans' ? (
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                       Clusters (k)
                     </label>
                     <select
                       value={selectedKmeansK}
                       onChange={(e) => setSelectedKmeansK(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-[#ff3c02]/60 font-medium"
                     >
                       <option value={2}>2 Clusters</option>
                       <option value={3}>3 Clusters</option>
@@ -2110,10 +2213,10 @@ export default function AnalyticsPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                       Pareto Cutoffs
                     </label>
-                    <div className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-600 font-medium">
+                    <div className="w-full bg-[#060709] border border-white/10 rounded-full px-4 py-2.5 text-xs text-slate-400 font-medium">
                       80% / 15% / 5%
                     </div>
                   </div>
@@ -2123,7 +2226,7 @@ export default function AnalyticsPage() {
                   <button
                     onClick={runSegmentation}
                     disabled={runningSegmentation}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    className="w-full bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:brightness-110 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/25 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
                     <RefreshCw className={`w-4 h-4 ${runningSegmentation ? 'animate-spin' : ''}`} />
                     <span>{runningSegmentation ? 'Clustering Data...' : 'Generate Segments'}</span>
@@ -2133,7 +2236,7 @@ export default function AnalyticsPage() {
             </div>
 
             {segmentationError && (
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>{segmentationError}</span>
               </div>
@@ -2141,17 +2244,17 @@ export default function AnalyticsPage() {
 
             {/* Empty state */}
             {!segmentationResult && !runningSegmentation && (
-              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
-                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+              <div className="bg-[#0c0d12] p-12 rounded-3xl shadow-2xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-14 h-14 bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30 rounded-2xl flex items-center justify-center mb-4">
                   <Users className="w-7 h-7" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-1">Customer & Product Segmentation Ready</h3>
-                <p className="text-slate-500 max-w-md text-xs mb-6">
+                <h3 className="text-lg font-bold text-white mb-1">Customer & Product Segmentation Ready</h3>
+                <p className="text-[#9ca3af] max-w-md text-xs mb-6">
                   Select your model above to classify accounts into behavioral RFM tiers, multi-feature K-Means clusters, or ABC Pareto catalog classes.
                 </p>
                 <button
                   onClick={runSegmentation}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                  className="bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:brightness-110 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-[#ff3c02]/25 transition-all cursor-pointer"
                 >
                   Run Segmentation Now
                 </button>
@@ -2163,44 +2266,48 @@ export default function AnalyticsPage() {
               <div className="space-y-6">
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Entities</div>
-                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                  <div className="bg-[#0c0d12] p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#ff3c02]/40 transition-all shadow-xl">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af]">Total Entities</div>
+                    <div className="text-2xl font-extrabold text-white mt-1">
                       {segmentationResult.total_entities?.toLocaleString() || segmentationResult.segments.reduce((acc, s) => acc + s.member_count, 0)}
                     </div>
-                    <div className="text-xs text-indigo-600 font-medium mt-1">
+                    <div className="text-xs text-[#fa7041] font-medium mt-1">
                       Method: {segmentationResult.method.toUpperCase()}
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Gross Monitored Value</div>
-                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                  <div className="bg-[#0c0d12] p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#ff3c02]/40 transition-all shadow-xl">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af]">Gross Monitored Value</div>
+                    <div className="text-2xl font-extrabold text-white mt-1">
                       ${(segmentationResult.total_monetary || segmentationResult.segments.reduce((acc, s) => acc + s.total_monetary, 0)).toLocaleString()}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">Cumulative spend across segments</div>
+                    <div className="text-xs text-[#9ca3af] mt-1">Cumulative spend across segments</div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Top Tier Dominance</div>
-                    <div className="text-2xl font-extrabold text-emerald-700 mt-1">
+                  <div className="bg-[#0c0d12] p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#ff3c02]/40 transition-all shadow-xl">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af]">Top Tier Dominance</div>
+                    <div className="text-2xl font-extrabold text-emerald-400 mt-1">
                       {segmentationResult.segments[0]?.percentage_of_monetary}%
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
+                    <div className="text-xs text-[#9ca3af] mt-1">
                       {segmentationResult.segments[0]?.label} revenue share
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <div className="bg-[#0c0d12] p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#ff3c02]/40 transition-all shadow-xl">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af]">
                       {segmentationResult.silhouette_score != null ? 'Silhouette Validation' : 'Active Segments'}
                     </div>
-                    <div className="text-2xl font-extrabold text-indigo-900 mt-1">
+                    <div className="text-2xl font-extrabold text-[#ffba86] mt-1">
                       {segmentationResult.silhouette_score != null 
                         ? segmentationResult.silhouette_score 
                         : `${segmentationResult.segments.length} Tiers`}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
+                    <div className="text-xs text-[#9ca3af] mt-1">
                       {segmentationResult.silhouette_score != null ? 'Cluster separation score [-1, 1]' : 'Distinct business classifications'}
                     </div>
                   </div>
@@ -2210,7 +2317,7 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   {/* Left: Segments List */}
                   <div className="lg:col-span-5 space-y-3">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-1">
                       Identified Segments ({segmentationResult.segments.length})
                     </div>
                     {segmentationResult.segments.map((seg, idx) => {
@@ -2219,40 +2326,40 @@ export default function AnalyticsPage() {
                         <div
                           key={seg.label + idx}
                           onClick={() => setActiveSegmentIndex(idx)}
-                          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
                             isSelected 
-                              ? 'bg-indigo-50/60 border-indigo-400 shadow-sm ring-1 ring-indigo-300' 
-                              : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                              ? 'bg-[#14151b] border-[#ff3c02] shadow-lg shadow-[#ff3c02]/15 ring-1 ring-[#ff3c02]/40' 
+                              : 'bg-[#0c0d12] border-white/10 hover:border-white/20 hover:bg-[#14151b]'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-slate-900">{seg.label}</h4>
-                            <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                            <h4 className="text-sm font-bold text-white">{seg.label}</h4>
+                            <span className="text-xs font-mono font-bold text-[#ffba86] bg-[#ff3c02]/15 border border-[#ff3c02]/30 px-2.5 py-0.5 rounded-full">
                               {seg.percentage_of_monetary}% Rev
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{seg.subtitle}</p>
+                          <p className="text-xs text-[#9ca3af] mt-0.5 line-clamp-1">{seg.subtitle}</p>
 
                           {/* Dual metric progress bar: Member share vs Revenue share */}
                           <div className="mt-3 space-y-1.5">
-                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <div className="flex items-center justify-between text-[11px] text-slate-300">
                               <span>Revenue Contribution (${seg.total_monetary.toLocaleString()})</span>
-                              <span className="font-semibold">{seg.percentage_of_monetary}%</span>
+                              <span className="font-semibold text-white">{seg.percentage_of_monetary}%</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
                               <div
-                                className="bg-indigo-600 h-1.5 rounded-full"
+                                className="bg-gradient-to-r from-[#ff3c02] to-[#fa7041] h-1.5 rounded-full"
                                 style={{ width: `${Math.min(100, seg.percentage_of_monetary)}%` }}
                               />
                             </div>
 
-                            <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <div className="flex items-center justify-between text-[11px] text-[#9ca3af]">
                               <span>Customer Share ({seg.member_count} members)</span>
                               <span>{seg.percentage_of_members}%</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
                               <div
-                                className="bg-slate-400 h-1.5 rounded-full"
+                                className="bg-slate-500 h-1.5 rounded-full"
                                 style={{ width: `${Math.min(100, seg.percentage_of_members)}%` }}
                               />
                             </div>
@@ -2263,23 +2370,23 @@ export default function AnalyticsPage() {
                   </div>
 
                   {/* Right: Active Segment Deep Dive */}
-                  <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                  <div className="lg:col-span-7 bg-[#0c0d12] p-6 rounded-3xl border border-white/10 shadow-2xl space-y-6 relative overflow-hidden">
                     {segmentationResult.segments[activeSegmentIndex] && (() => {
                       const activeSeg = segmentationResult.segments[activeSegmentIndex];
                       return (
                         <>
-                          <div className="border-b border-slate-100 pb-4">
+                          <div className="border-b border-white/10 pb-4">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md">
+                              <span className="text-xs font-bold uppercase tracking-wider text-[#fa7041] bg-[#ff3c02]/15 border border-[#ff3c02]/30 px-3 py-0.5 rounded-full">
                                 Segment Details
                               </span>
-                              <span className="text-xs text-slate-400">•</span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-white/20">•</span>
+                              <span className="text-xs text-[#9ca3af]">
                                 {activeSeg.member_count} Members ({activeSeg.percentage_of_members}% of total)
                               </span>
                             </div>
-                            <h3 className="text-xl font-extrabold text-slate-900">{activeSeg.label}</h3>
-                            <p className="text-sm text-slate-600 mt-1">{activeSeg.subtitle}</p>
+                            <h3 className="text-xl font-extrabold text-white">{activeSeg.label}</h3>
+                            <p className="text-sm text-slate-300 mt-1">{activeSeg.subtitle}</p>
                           </div>
 
                           {/* Profile Statistics Grid */}
@@ -2287,50 +2394,50 @@ export default function AnalyticsPage() {
                             const prof = activeSeg.profile;
                             return (
                               <div>
-                                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                                <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-3">
                                   Behavioral Centroid Profile
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                   {prof.avg_recency_days != null && (
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                      <div className="text-[11px] text-slate-500 font-medium">Avg Recency</div>
-                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                    <div className="bg-[#14151b] p-3 rounded-2xl border border-white/10">
+                                      <div className="text-[11px] text-[#9ca3af] font-medium">Avg Recency</div>
+                                      <div className="text-base font-bold text-white mt-0.5">
                                         {prof.avg_recency_days} days
                                       </div>
-                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                      <div className="text-[10px] text-[#ffba86] font-semibold mt-0.5">
                                         R-Score: {prof.avg_r_score} / 5
                                       </div>
                                     </div>
                                   )}
 
                                   {prof.avg_frequency != null && (
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                      <div className="text-[11px] text-slate-500 font-medium">Avg Orders</div>
-                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                    <div className="bg-[#14151b] p-3 rounded-2xl border border-white/10">
+                                      <div className="text-[11px] text-[#9ca3af] font-medium">Avg Orders</div>
+                                      <div className="text-base font-bold text-white mt-0.5">
                                         {prof.avg_frequency} txns
                                       </div>
-                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                      <div className="text-[10px] text-[#ffba86] font-semibold mt-0.5">
                                         F-Score: {prof.avg_f_score} / 5
                                       </div>
                                     </div>
                                   )}
 
                                   {prof.avg_monetary != null && (
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                      <div className="text-[11px] text-slate-500 font-medium">Avg Spend</div>
-                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                    <div className="bg-[#14151b] p-3 rounded-2xl border border-white/10">
+                                      <div className="text-[11px] text-[#9ca3af] font-medium">Avg Spend</div>
+                                      <div className="text-base font-bold text-white mt-0.5">
                                         ${prof.avg_monetary.toLocaleString()}
                                       </div>
-                                      <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                      <div className="text-[10px] text-[#ffba86] font-semibold mt-0.5">
                                         M-Score: {prof.avg_m_score} / 5
                                       </div>
                                     </div>
                                   )}
 
                                   {prof.centroids && Object.entries(prof.centroids).map(([feat, val]) => (
-                                    <div key={feat} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                      <div className="text-[11px] text-slate-500 font-medium capitalize">{feat.replace('_', ' ')}</div>
-                                      <div className="text-base font-bold text-slate-900 mt-0.5">
+                                    <div key={feat} className="bg-[#14151b] p-3 rounded-2xl border border-white/10">
+                                      <div className="text-[11px] text-[#9ca3af] font-medium capitalize">{feat.replace('_', ' ')}</div>
+                                      <div className="text-base font-bold text-white mt-0.5">
                                         {Number(val).toLocaleString()}
                                       </div>
                                       {prof.global_averages && prof.global_averages[feat] != null && (
@@ -2347,12 +2454,12 @@ export default function AnalyticsPage() {
 
                           {/* Actionable Strategy Playbook */}
                           {activeSeg.recommendation && (
-                            <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200">
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                            <div className="bg-[#14151b] p-4 rounded-2xl border border-[#ff3c02]/30 relative overflow-hidden">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-[#fa7041] mb-1 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-[#ff3c02]" />
                                 Actionable Business Playbook
                               </h4>
-                              <p className="text-xs text-indigo-950 leading-relaxed font-medium">
+                              <p className="text-xs text-slate-200 leading-relaxed font-normal">
                                 {activeSeg.recommendation}
                               </p>
                             </div>
@@ -2361,12 +2468,12 @@ export default function AnalyticsPage() {
                           {/* Sample Members Table */}
                           {activeSeg.sample_members && activeSeg.sample_members.length > 0 && (
                             <div>
-                              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                              <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-2">
                                 Representative Segment Members
                               </div>
-                              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                                  <thead className="bg-slate-50 text-slate-600 font-semibold">
+                              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#060709]">
+                                <table className="min-w-full divide-y divide-white/5 text-left text-xs">
+                                  <thead className="bg-[#14151b] text-slate-400 font-semibold border-b border-white/10">
                                     <tr>
                                       <th className="px-3 py-2">Entity</th>
                                       {activeSeg.sample_members[0].monetary != null && <th className="px-3 py-2">Monetary</th>}
@@ -2376,16 +2483,16 @@ export default function AnalyticsPage() {
                                       {activeSeg.sample_members[0].r_score != null && <th className="px-3 py-2">R / F / M</th>}
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                                  <tbody className="divide-y divide-white/5 text-slate-200">
                                     {activeSeg.sample_members.map((m, mIdx) => (
-                                      <tr key={mIdx} className="hover:bg-slate-50/50">
-                                        <td className="px-3 py-2 font-bold text-slate-900">{m.entity || m.product || `Entity #${mIdx + 1}`}</td>
-                                        {m.monetary != null && <td className="px-3 py-2 font-semibold text-indigo-600">${m.monetary.toLocaleString()}</td>}
-                                        {m.revenue != null && <td className="px-3 py-2 font-semibold text-indigo-600">${m.revenue.toLocaleString()}</td>}
-                                        {m.frequency != null && <td className="px-3 py-2">{m.frequency}</td>}
-                                        {m.recency_days != null && <td className="px-3 py-2">{m.recency_days}d ago</td>}
+                                      <tr key={mIdx} className="hover:bg-white/5 transition-colors">
+                                        <td className="px-3 py-2 font-bold text-white">{m.entity || m.product || `Entity #${mIdx + 1}`}</td>
+                                        {m.monetary != null && <td className="px-3 py-2 font-semibold text-[#ffba86]">${m.monetary.toLocaleString()}</td>}
+                                        {m.revenue != null && <td className="px-3 py-2 font-semibold text-[#ffba86]">${m.revenue.toLocaleString()}</td>}
+                                        {m.frequency != null && <td className="px-3 py-2 text-slate-300">{m.frequency}</td>}
+                                        {m.recency_days != null && <td className="px-3 py-2 text-slate-300">{m.recency_days}d ago</td>}
                                         {m.r_score != null && (
-                                          <td className="px-3 py-2 font-mono text-slate-500">
+                                          <td className="px-3 py-2 font-mono text-slate-400">
                                             {m.r_score}-{m.f_score}-{m.m_score}
                                           </td>
                                         )}
@@ -2403,33 +2510,33 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Methodology Reference Box */}
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#0c0d12] p-6 rounded-3xl border border-white/10 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1.5 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-[#fa7041]" />
                       RFM Behavioral Quantiles
                     </h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-[#9ca3af] leading-relaxed">
                       Scores Recency, Frequency, and Monetary parameters on standardized 1-5 rank percentiles to build actionable customer lifecycle cohorts.
                     </p>
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                      <Activity className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1.5 flex items-center gap-1.5">
+                      <Activity className="w-4 h-4 text-[#fa7041]" />
                       K-Means with Silhouette Validation
                     </h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-[#9ca3af] leading-relaxed">
                       Evaluates multi-feature clusters using standardized Euclidean distance. Automatically discovers optimal separation without arbitrary guessing.
                     </p>
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1.5 flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-[#fa7041]" />
                       ABC Pareto Catalog Distribution
                     </h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-[#9ca3af] leading-relaxed">
                       Decomposes inventory revenue into Class A core drivers (top 80%), Class B steady contributors (15%), and Class C long-tail SKUs (5%).
                     </p>
                   </div>
@@ -2444,32 +2551,33 @@ export default function AnalyticsPage() {
           <section className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-[#fa7041]" />
                   Prescriptive Recommendations & Executive Briefing
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[#9ca3af]">
                   Cross-layer synthesis translating empirical metrics, forecasts, anomalies, and customer cohorts into prioritized actions and boardroom-ready briefs.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs text-slate-300 bg-[#0c0d12] border border-white/10 px-3 py-1.5 rounded-full">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Empirically Grounded Prescriptive Strategy</span>
               </div>
             </div>
 
             {/* Generator Card & Report Switcher */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-6 border-b border-slate-100">
+            <div className="bg-[#0c0d12] p-6 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-6 border-b border-white/10">
                 <div className="max-w-xl">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#fa7041] mb-1">
                     <Sparkles className="w-3.5 h-3.5" />
                     Boardroom Briefing Generator
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-lg font-bold text-white">
                     Compile Automated Executive Report
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-[#9ca3af] mt-1">
                     Synthesizes verified KPIs, strategic findings, forward projections, detected risks, and prioritized recommendations into structured JSON and publishable Markdown.
                   </p>
                 </div>
@@ -2480,12 +2588,12 @@ export default function AnalyticsPage() {
                     value={reportTitleInput}
                     onChange={(e) => setReportTitleInput(e.target.value)}
                     placeholder="Report title (e.g. Q4 Executive Briefing)"
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[280px]"
+                    className="bg-[#060709] border border-white/10 rounded-full px-5 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#ff3c02]/60 min-w-[280px]"
                   />
                   <button
                     onClick={handleGenerateReport}
                     disabled={generatingReport}
-                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] hover:brightness-110 text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-lg shadow-[#ff3c02]/25 disabled:opacity-50 cursor-pointer"
                   >
                     <FileText className={`w-4 h-4 ${generatingReport ? 'animate-spin' : ''}`} />
                     {generatingReport ? 'Compiling Report...' : 'Compile Briefing'}
@@ -2496,11 +2604,11 @@ export default function AnalyticsPage() {
               {/* Historical Reports Drawer & Quick Switcher */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Compiled Reports:
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#fa7041]" /> Compiled Reports:
                   </span>
                   {reportsList.length === 0 ? (
-                    <span className="text-xs text-slate-400 italic">No reports compiled yet</span>
+                    <span className="text-xs text-slate-500 italic">No reports compiled yet</span>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">
                       {reportsList.map((rep) => {
@@ -2509,10 +2617,10 @@ export default function AnalyticsPage() {
                           <button
                             key={rep.id}
                             onClick={() => loadReportDetails(rep.id)}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
                               isCurrent
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                ? 'bg-[#ff3c02]/15 border-[#ff3c02]/40 text-[#ffba86] font-semibold'
+                                : 'bg-[#14151b] border-white/10 text-slate-300 hover:border-white/20 hover:text-white'
                             }`}
                           >
                             <FileText className="w-3 h-3" />
@@ -2527,7 +2635,7 @@ export default function AnalyticsPage() {
                 <button
                   onClick={handleRefreshRecommendations}
                   disabled={loadingRecommendations}
-                  className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-[#fa7041] hover:text-[#ffba86] font-semibold transition-colors cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingRecommendations ? 'animate-spin' : ''}`} />
                   Refresh Recommendations
@@ -2539,14 +2647,14 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Target className="w-5 h-5 text-[#fa7041]" />
                     Prioritized Prescriptive Playbooks
-                    <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="bg-[#ff3c02]/15 border border-[#ff3c02]/30 text-[#fa7041] text-xs font-bold px-2.5 py-0.5 rounded-full">
                       {filteredRecommendations.length} {filteredRecommendations.length === 1 ? 'Action' : 'Actions'}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[#9ca3af]">
                     Concrete, empirical recommendations ranked by business priority and risk exposure.
                   </p>
                 </div>
@@ -2554,11 +2662,11 @@ export default function AnalyticsPage() {
                 {/* Filter Controls */}
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-semibold text-slate-500">Priority:</label>
+                    <label className="text-xs font-semibold text-[#9ca3af]">Priority:</label>
                     <select
                       value={recPriorityFilter}
                       onChange={(e) => setRecPriorityFilter(e.target.value)}
-                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="bg-[#060709] border border-white/10 rounded-full px-3 py-1.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#ff3c02]/60"
                     >
                       <option value="all">All Priorities</option>
                       <option value="critical">Critical</option>
@@ -2569,11 +2677,11 @@ export default function AnalyticsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-semibold text-slate-500">Category:</label>
+                    <label className="text-xs font-semibold text-[#9ca3af]">Category:</label>
                     <select
                       value={recCategoryFilter}
                       onChange={(e) => setRecCategoryFilter(e.target.value)}
-                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="bg-[#060709] border border-white/10 rounded-full px-3 py-1.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#ff3c02]/60"
                     >
                       <option value="all">All Categories</option>
                       <option value="risk_mitigation">Risk Mitigation</option>
@@ -2588,10 +2696,10 @@ export default function AnalyticsPage() {
 
               {/* Recommendations Grid */}
               {filteredRecommendations.length === 0 ? (
-                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-                  <div className="text-sm font-semibold text-slate-700">No Pending Strategic Alerts</div>
-                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                <div className="bg-[#0c0d12] p-8 rounded-3xl border border-white/10 text-center shadow-xl">
+                  <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                  <div className="text-sm font-semibold text-white">No Pending Strategic Alerts</div>
+                  <p className="text-xs text-[#9ca3af] mt-1 max-w-md mx-auto">
                     {recommendations.length > 0
                       ? 'No recommendations match your current priority and category filter.'
                       : 'All data integrity invariants and operational metrics are currently stable. Run additional analyses to identify new growth vectors.'}
@@ -2605,17 +2713,17 @@ export default function AnalyticsPage() {
                     const isMedium = rec.priority === 'medium';
                     const isExpanded = expandedRecId === rec.id;
 
-                    let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-                    let icon = <CheckCircle className="w-4 h-4 text-slate-600" />;
+                    let badgeColor = 'bg-slate-500/15 text-slate-300 border-white/10';
+                    let icon = <CheckCircle className="w-4 h-4 text-slate-300" />;
                     if (isCritical) {
-                      badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
-                      icon = <AlertOctagon className="w-4 h-4 text-rose-600" />;
+                      badgeColor = 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+                      icon = <AlertOctagon className="w-4 h-4 text-rose-400" />;
                     } else if (isHigh) {
-                      badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-                      icon = <AlertTriangle className="w-4 h-4 text-amber-600" />;
+                      badgeColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+                      icon = <AlertTriangle className="w-4 h-4 text-amber-400" />;
                     } else if (isMedium) {
-                      badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-                      icon = <Info className="w-4 h-4 text-blue-600" />;
+                      badgeColor = 'bg-[#ff3c02]/15 text-[#fa7041] border-[#ff3c02]/30';
+                      icon = <Info className="w-4 h-4 text-[#fa7041]" />;
                     }
 
                     const categoryLabels: Record<string, string> = {
@@ -2629,14 +2737,15 @@ export default function AnalyticsPage() {
                     return (
                       <div
                         key={rec.id}
-                        className={`bg-white rounded-2xl border transition-all p-6 shadow-sm hover:shadow-md flex flex-col justify-between ${
+                        className={`bg-[#0c0d12] rounded-3xl border transition-all p-6 shadow-xl hover:border-[#ff3c02]/40 flex flex-col justify-between relative overflow-hidden group ${
                           isCritical
-                            ? 'border-rose-200/90'
+                            ? 'border-rose-500/30'
                             : isHigh
-                            ? 'border-amber-200/90'
-                            : 'border-slate-200'
+                            ? 'border-amber-500/30'
+                            : 'border-white/10'
                         }`}
                       >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
                         <div className="space-y-4">
                           {/* Priority and Category Tag */}
                           <div className="flex items-center justify-between gap-2">
@@ -2644,31 +2753,31 @@ export default function AnalyticsPage() {
                               {icon}
                               {rec.priority} Priority
                             </span>
-                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full capitalize">
+                            <span className="text-xs font-semibold text-[#9ca3af] bg-[#14151b] border border-white/10 px-2.5 py-0.5 rounded-full capitalize">
                               {categoryLabels[rec.category] || rec.category.replace('_', ' ')}
                             </span>
                           </div>
 
                           {/* Recommendation Title */}
-                          <h4 className="text-base font-bold text-slate-900 leading-snug">
+                          <h4 className="text-base font-bold text-white leading-snug">
                             {rec.title}
                           </h4>
 
                           {/* Impact Highlight Banner */}
-                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-start gap-2.5">
+                          <div className="bg-[#14151b] border border-white/10 rounded-2xl p-3 flex items-start gap-2.5">
                             <span className="text-sm">⚡</span>
                             <div>
-                              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Estimated Impact</div>
-                              <div className="text-xs text-slate-800 font-medium mt-0.5">{rec.impact_summary}</div>
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Estimated Impact</div>
+                              <div className="text-xs text-slate-200 font-medium mt-0.5">{rec.impact_summary}</div>
                             </div>
                           </div>
 
                           {/* Empirical Rationale */}
                           <div>
-                            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                            <div className="text-xs font-bold uppercase tracking-wider text-[#9ca3af] mb-1">
                               Empirical Rationale
                             </div>
-                            <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                            <p className="text-xs text-slate-300 leading-relaxed font-normal">
                               {rec.rationale}
                             </p>
                           </div>
@@ -2676,13 +2785,13 @@ export default function AnalyticsPage() {
                           {/* Action Plan Steps */}
                           {rec.action_plan && rec.action_plan.length > 0 && (
                             <div className="space-y-2 pt-2">
-                              <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                              <div className="text-xs font-bold uppercase tracking-wider text-[#fa7041] flex items-center gap-1.5">
                                 <span>🎯</span> Recommended Action Steps
                               </div>
                               <div className="space-y-1.5">
                                 {rec.action_plan.map((step, sIdx) => (
-                                  <div key={sIdx} className="flex items-start gap-2 text-xs text-slate-800 bg-indigo-50/30 p-2 rounded-lg border border-indigo-100/40">
-                                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
+                                  <div key={sIdx} className="flex items-start gap-2 text-xs text-slate-200 bg-[#14151b] p-2.5 rounded-xl border border-white/10">
+                                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-gradient-to-r from-[#ff3c02] to-[#fa7041] text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
                                       {sIdx + 1}
                                     </span>
                                     <span className="font-medium leading-relaxed">{step}</span>
@@ -2695,17 +2804,17 @@ export default function AnalyticsPage() {
 
                         {/* Evidence Collapsible */}
                         {rec.evidence && Object.keys(rec.evidence).length > 0 && (
-                          <div className="mt-5 pt-3 border-t border-slate-100">
+                          <div className="mt-5 pt-3 border-t border-white/10">
                             <button
                               onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
-                              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                              className="text-[11px] font-semibold text-[#fa7041] hover:text-[#ffba86] flex items-center gap-1 transition-colors cursor-pointer"
                             >
                               <Database className="w-3 h-3" />
                               {isExpanded ? 'Hide Data Citations' : 'Inspect Data Citations'}
                               {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
                             {isExpanded && (
-                              <div className="mt-2.5 p-3 bg-slate-900 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto border border-slate-800">
+                              <div className="mt-2.5 p-3 bg-[#060709] text-[#ffba86] rounded-2xl text-[11px] font-mono overflow-x-auto border border-white/10">
                                 <pre>{JSON.stringify(rec.evidence, null, 2)}</pre>
                               </div>
                             )}
@@ -2991,27 +3100,30 @@ export default function AnalyticsPage() {
         {(activeTab === 'charts' || activeTab === 'all') && (
           <section className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#ff3c02]" />
                 Quantitative Dashboards & Performance Visuals
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[#9ca3af]">
                 Core statistical aggregates and dimension breakdowns powering the deterministic analytics layer.
               </p>
             </div>
 
             {!autoAnalysis ? (
-              <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[350px]">
-                <Activity className="w-16 h-16 text-slate-300 mb-4" />
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">No Visual Analytics Found</h3>
-                <p className="text-slate-500 mb-6 max-w-md text-sm">Execute the business analytics engine to profile key dimensions, volume trends, and transaction velocity.</p>
+              <div className="bg-[#0c0d12] p-12 rounded-3xl border border-white/10 shadow-2xl text-center flex flex-col items-center justify-center min-h-[350px] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+                <div className="w-16 h-16 rounded-2xl bg-[#ff3c02]/10 border border-[#ff3c02]/30 flex items-center justify-center text-[#ff3c02] mb-4">
+                  <Activity className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">No Visual Analytics Found</h3>
+                <p className="text-[#9ca3af] mb-6 max-w-md text-sm">Execute the business analytics engine to profile key dimensions, volume trends, and transaction velocity.</p>
                 <button 
                   onClick={runAnalytics} 
                   disabled={submittingAnalysis}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-semibold shadow-md flex items-center gap-2 text-sm"
+                  className="bg-gradient-to-r from-[#ff3c02] to-[#fa7041] hover:brightness-110 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#ff3c02]/25 flex items-center gap-2 text-sm transition-all"
                 >
                   <TrendingUp className="w-4 h-4" />
-                  Run Analysis Engine
+                  {submittingAnalysis ? 'Running Intelligence Engine...' : 'Run Analysis Engine'}
                 </button>
               </div>
             ) : (
@@ -3022,26 +3134,26 @@ export default function AnalyticsPage() {
                     <MetricCard 
                       title="Total Revenue" 
                       value={metrics.revenue !== null && metrics.revenue !== undefined ? `$${metrics.revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'N/A'} 
-                      icon={<DollarSign className="w-6 h-6 text-emerald-600" />}
+                      icon={<DollarSign className="w-6 h-6 text-emerald-400" />}
                       trend="Deterministic Sum"
                       trendUp={true}
                     />
                     <MetricCard 
                       title="Total Volume" 
                       value={metrics.order_count.toLocaleString()} 
-                      icon={<ShoppingCart className="w-6 h-6 text-blue-600" />}
+                      icon={<ShoppingCart className="w-6 h-6 text-blue-400" />}
                       trend="Recorded Transactions"
                     />
                     <MetricCard 
                       title="Unique Accounts" 
                       value={metrics.customer_count ? metrics.customer_count.toLocaleString() : 'N/A'} 
-                      icon={<Users className="w-6 h-6 text-indigo-600" />}
+                      icon={<Users className="w-6 h-6 text-[#fa7041]" />}
                       trend="Distinct Entities"
                     />
                     <MetricCard 
                       title="Avg Order Value" 
                       value={metrics.aov ? `$${metrics.aov.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'N/A'} 
-                      icon={<Activity className="w-6 h-6 text-purple-600" />}
+                      icon={<Activity className="w-6 h-6 text-[#ffba86]" />}
                       trend="Revenue / Transactions"
                     />
                   </div>
@@ -3050,45 +3162,54 @@ export default function AnalyticsPage() {
                 {/* Charts Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Time Series Chart */}
-                  <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                  <div className="lg:col-span-2 bg-[#0c0d12] p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
                     <div className="flex justify-between items-center mb-6">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-800">Trajectory Over Time</h3>
-                        <p className="text-xs text-slate-500">Chronological volume aggregated across reporting dates</p>
+                        <h3 className="text-lg font-bold text-white">Trajectory Over Time</h3>
+                        <p className="text-xs text-[#9ca3af]">Chronological volume aggregated across reporting dates</p>
                       </div>
                     </div>
-                        {ts && ts.length > 0 ? (
+                    {ts && ts.length > 0 ? (
                       <div className="h-[350px] w-full pt-2">
                         <ResponsiveContainer width="100%" height={340} minWidth={100} minHeight={340}>
                           <AreaChart data={ts} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                             <defs>
                               <linearGradient id="analyticsRevGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.4} />
-                                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.0} />
+                                <stop offset="5%" stopColor="#ff3c02" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#ff3c02" stopOpacity={0.0} />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#22242d" />
                             <XAxis 
                               dataKey="date" 
                               axisLine={false}
                               tickLine={false}
-                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              tick={{ fill: '#9ca3af', fontSize: 12 }}
                               dy={10}
                             />
                             <YAxis 
                               axisLine={false}
                               tickLine={false}
-                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              tick={{ fill: '#9ca3af', fontSize: 12 }}
                               tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
                             />
                             <Tooltip 
-                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              contentStyle={{ 
+                                backgroundColor: '#0c0d12', 
+                                border: '1px solid rgba(255, 255, 255, 0.1)', 
+                                borderRadius: '16px', 
+                                color: '#f4f4f6', 
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' 
+                              }}
+                              itemStyle={{ color: '#ffba86' }}
+                              labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
                               formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue Volume']}
                             />
                             <Area 
                               type="monotone" 
                               dataKey="value" 
-                              stroke="#4f46e5" 
+                              stroke="#ff3c02" 
                               strokeWidth={3} 
                               fillOpacity={1}
                               fill="url(#analyticsRevGrad)"
@@ -3097,27 +3218,28 @@ export default function AnalyticsPage() {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="h-[350px] flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl border border-dashed text-sm">
+                      <div className="h-[350px] flex items-center justify-center text-[#9ca3af] bg-[#14151b] rounded-2xl border border-white/5 border-dashed text-sm">
                         No temporal/date column identified for time-series visualization.
                       </div>
                     )}
                   </div>
 
                   {/* Dimension Breakdowns Chart */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                  <div className="bg-[#0c0d12] p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl flex flex-col relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
                     <div className="flex justify-between items-start mb-6">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-800">Segment Distribution</h3>
-                        <p className="text-xs text-slate-500">Ranking by categorical share</p>
+                        <h3 className="text-lg font-bold text-white">Segment Distribution</h3>
+                        <p className="text-xs text-[#9ca3af]">Ranking by categorical share</p>
                       </div>
                       {dimensionKeys.length > 0 && (
                         <select 
                           value={activeDimension}
                           onChange={(e) => setSelectedDimension(e.target.value)}
-                          className="text-xs border-slate-200 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 py-1.5 pl-2.5 pr-8 text-slate-700 bg-slate-50 font-medium"
+                          className="text-xs border border-white/10 rounded-full shadow-sm focus:ring-[#ff3c02] focus:border-[#ff3c02] py-1.5 pl-3 pr-8 text-white bg-[#14151b] font-medium"
                         >
                           {dimensionKeys.map(k => (
-                            <option key={k} value={k}>{k.replace(/_/g, ' ').toUpperCase()}</option>
+                            <option key={k} value={k} className="bg-[#14151b] text-white">{k.replace(/_/g, ' ').toUpperCase()}</option>
                           ))}
                         </select>
                       )}
@@ -3131,19 +3253,27 @@ export default function AnalyticsPage() {
                             layout="vertical"
                             margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#22242d" />
                             <XAxis type="number" hide />
                             <YAxis 
                               type="category" 
                               dataKey="label" 
                               axisLine={false}
                               tickLine={false}
-                              tick={{ fill: '#475569', fontSize: 12 }}
+                              tick={{ fill: '#9ca3af', fontSize: 12 }}
                               width={90}
                             />
                             <Tooltip 
-                              cursor={{ fill: '#f8fafc' }}
-                              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                              contentStyle={{ 
+                                backgroundColor: '#0c0d12', 
+                                border: '1px solid rgba(255, 255, 255, 0.1)', 
+                                borderRadius: '16px', 
+                                color: '#f4f4f6', 
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' 
+                              }}
+                              itemStyle={{ color: '#fa7041' }}
+                              labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
                               formatter={(value: any) => [Number(value).toLocaleString(), 'Value']}
                             />
                             <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={22}>
@@ -3155,7 +3285,7 @@ export default function AnalyticsPage() {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl border border-dashed text-sm">
+                      <div className="flex-1 flex items-center justify-center text-[#9ca3af] bg-[#14151b] rounded-2xl border border-white/5 border-dashed text-sm">
                         No categorical dimensions detected.
                       </div>
                     )}
@@ -3173,16 +3303,17 @@ export default function AnalyticsPage() {
 
 function MetricCard({ title, value, icon, trend, trendUp }: { title: string; value: string | number; icon: React.ReactNode; trend?: string; trendUp?: boolean }) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow">
+    <div className="bg-[#0c0d12] border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-[#ff3c02]/40 transition-all shadow-xl">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider">{title}</h3>
-        <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">{icon}</div>
+        <h3 className="text-[#9ca3af] text-xs font-bold uppercase tracking-wider">{title}</h3>
+        <div className="p-2.5 bg-[#ff3c02]/15 border border-[#ff3c02]/30 rounded-2xl text-[#fa7041]">{icon}</div>
       </div>
       <div>
-        <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</p>
+        <p className="text-3xl font-extrabold text-white tracking-tight">{value}</p>
         {trend && (
-          <p className="text-xs mt-2.5 font-medium text-slate-500 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span>
+          <p className="text-xs mt-2.5 font-medium text-[#9ca3af] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ff3c02] inline-block shadow-sm shadow-[#ff3c02]"></span>
             {trend}
           </p>
         )}
@@ -3207,20 +3338,20 @@ function InsightCard({
   const severityBadge = () => {
     if (isCritical) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
           <AlertOctagon className="w-3.5 h-3.5" /> CRITICAL RISK
         </span>
       );
     }
     if (isWarning) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
           <AlertTriangle className="w-3.5 h-3.5" /> STRATEGIC WARNING
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#ff3c02]/15 text-[#fa7041] border border-[#ff3c02]/30">
         <Info className="w-3.5 h-3.5" /> BUSINESS OPPORTUNITY
       </span>
     );
@@ -3230,7 +3361,7 @@ function InsightCard({
     ? 'border-l-4 border-l-rose-500' 
     : isWarning 
     ? 'border-l-4 border-l-amber-500' 
-    : 'border-l-4 border-l-indigo-500';
+    : 'border-l-4 border-l-[#ff3c02]';
 
   // Parse sections if available in evidence or parse from body
   const observedFacts = insight.evidence?.observed_facts || [];
@@ -3239,36 +3370,38 @@ function InsightCard({
   const interpretation = insight.evidence?.interpretation;
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 ${borderHighlight} transition-all`}>
+    <div className={`bg-[#0c0d12] rounded-3xl shadow-2xl border border-white/10 p-6 md:p-8 ${borderHighlight} hover:border-[#ff3c02]/40 transition-all relative overflow-hidden group`}>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#ff3c02]/10 to-transparent pointer-events-none rounded-bl-full" />
+      
       {/* Top Meta Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           {severityBadge()}
           {insight.category && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
               {insight.category}
             </span>
           )}
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200 flex items-center gap-1">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/5 text-slate-400 border border-white/10 flex items-center gap-1">
             {insight.source === 'ai' ? (
               <>
-                <Sparkles className="w-3 h-3 text-indigo-500" /> AI Synthesized
+                <Sparkles className="w-3 h-3 text-[#fa7041]" /> AI Synthesized
               </>
             ) : (
               <>
-                <ShieldCheck className="w-3 h-3 text-emerald-500" /> Grounded Rules
+                <ShieldCheck className="w-3 h-3 text-emerald-400" /> Grounded Rules
               </>
             )}
           </span>
         </div>
 
-        <div className="text-xs text-slate-400 font-mono">
+        <div className="text-xs text-[#9ca3af] font-mono">
           Model: {insight.model_name || 'deterministic-v1'}
         </div>
       </div>
 
       {/* Main Title */}
-      <h3 className="text-xl font-bold text-slate-900 mb-6 tracking-tight leading-snug">
+      <h3 className="text-xl md:text-2xl font-extrabold text-white mb-6 tracking-tight leading-snug">
         {insight.title}
       </h3>
 
@@ -3277,14 +3410,14 @@ function InsightCard({
         
         {/* 1. Observed Facts */}
         {observedFacts.length > 0 && (
-          <div className="bg-slate-50/70 rounded-xl p-4 border border-slate-100">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <div className="bg-[#14151b] rounded-2xl p-5 border border-white/10">
+            <h4 className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
               <span>📊</span> Observed Quantitative Facts
             </h4>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {observedFacts.map((fact, idx) => (
-                <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                  <span className="text-indigo-500 font-bold">•</span>
+                <li key={idx} className="text-sm text-slate-200 flex items-start gap-2">
+                  <span className="text-[#ff3c02] font-bold">•</span>
                   <span>{fact}</span>
                 </li>
               ))}
@@ -3295,14 +3428,14 @@ function InsightCard({
         {/* 2. Calculated Metrics */}
         {Object.keys(calculatedMetrics).length > 0 && (
           <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
               <span>📐</span> Deterministically Calculated Metrics
             </h4>
             <div className="flex flex-wrap gap-2.5">
               {Object.entries(calculatedMetrics).map(([key, val]) => (
-                <div key={key} className="bg-indigo-50/60 border border-indigo-100 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs">
-                  <span className="text-slate-500 font-medium">{key.replace(/_/g, ' ').toUpperCase()}:</span>
-                  <span className="text-indigo-900 font-bold">{String(val)}</span>
+                <div key={key} className="bg-[#060709] border border-white/10 px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs shadow-sm">
+                  <span className="text-[#9ca3af] font-medium">{key.replace(/_/g, ' ').toUpperCase()}:</span>
+                  <span className="text-[#ffba86] font-bold font-mono">{String(val)}</span>
                 </div>
               ))}
             </div>
@@ -3312,33 +3445,32 @@ function InsightCard({
         {/* 3. Strategic Interpretation */}
         {interpretation ? (
           <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <span>💡</span> Strategic Business Interpretation
             </h4>
-            <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-100 p-4 rounded-xl shadow-xs">
+            <p className="text-sm text-slate-200 leading-relaxed bg-[#14151b] border border-white/10 p-5 rounded-2xl shadow-sm">
               {interpretation}
             </p>
           </div>
         ) : (
-          /* Fallback rendering from markdown body if structured fields aren't in evidence */
-          <div className="prose prose-sm text-slate-700 whitespace-pre-line leading-relaxed">
+          <div className="prose prose-invert prose-sm text-slate-200 whitespace-pre-line leading-relaxed bg-[#14151b] border border-white/10 p-5 rounded-2xl">
             {insight.body}
           </div>
         )}
 
         {/* 4. Actionable Recommendations */}
         {recommendations.length > 0 && (
-          <div className="bg-gradient-to-br from-indigo-50/40 to-slate-50 rounded-xl p-4 border border-indigo-100/60">
-            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <div className="bg-gradient-to-br from-[#14151b] to-[#0c0d12] rounded-2xl p-5 border border-[#ff3c02]/25 shadow-sm">
+            <h4 className="text-xs font-bold text-[#fa7041] uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <span>🎯</span> Actionable Executive Recommendations
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {recommendations.map((rec, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 text-sm text-slate-800">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                <div key={idx} className="flex items-start gap-3 text-sm text-slate-100">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-r from-[#ff3c02] via-[#f45b31] to-[#fa7041] text-white text-xs font-bold flex items-center justify-center mt-0.5 shadow-md shadow-[#ff3c02]/30">
                     {idx + 1}
                   </span>
-                  <span className="font-medium">{rec}</span>
+                  <span className="font-medium leading-relaxed">{rec}</span>
                 </div>
               ))}
             </div>
@@ -3347,31 +3479,31 @@ function InsightCard({
       </div>
 
       {/* Traceability Accordion Button */}
-      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+      <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
         <button 
           onClick={onToggleEvidence}
-          className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#fa7041] hover:text-[#ffba86] transition-colors"
         >
           <Database className="w-3.5 h-3.5" />
           {isExpanded ? 'Hide Grounded Evidence & Formulas' : 'Inspect Analytical Evidence (Traceability)'}
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
 
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-[#9ca3af]">
           Created {new Date(insight.created_at).toLocaleDateString()}
         </span>
       </div>
 
       {/* Traceability Raw JSON Evidence Drawer */}
       {isExpanded && (
-        <div className="mt-4 p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto border border-slate-800">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-slate-400">
+        <div className="mt-4 p-4 bg-[#060709] text-slate-100 rounded-2xl text-xs font-mono overflow-x-auto border border-white/10">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-[#9ca3af]">
             <span className="font-semibold text-slate-300 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Grounded Analytical Context (Anti-Hallucination)
             </span>
             <span>Version: {insight.prompt_version || 'v1.0'}</span>
           </div>
-          <pre className="text-emerald-400 leading-relaxed">
+          <pre className="text-[#ffba86] leading-relaxed">
             {JSON.stringify(insight.evidence || {}, null, 2)}
           </pre>
         </div>

@@ -1,0 +1,55 @@
+transaction_id,customer_name,industry_sector,region,product_tier,order_date,revenue_usd,contract_months,payment_status,nps_score,monthly_usage_units_k,churn_risk_level
+NXSP-2023-0001,Titanium Metals Global,Manufacturing & Heavy Industry,North America,Enterprise Elite Suite,2023-01-17,255447.3,12,Completed,7,1062,Low
+NXSP-2023-0002,Crestview Financial,Finance & FinTech,North America,Growth Accelerator Tier,2023-01-24,35983.31,12,Completed,4,1978,Elevated
+NXSP-2023-0003,Kyoto Precision Instruments,Manufacturing & Robotics,APAC,Essential Analytics Pack,2023-02-07,21086.17,36,Completed,8,3812,Minimal
+NXSP-2023-0004,Tokyo Robotics Corp,Manufacturing & Robotics,APAC,AI Predictive Engine,2023-02-10,115454.81,24,Completed,10,1142,Minimal
+NXSP-2023-0005,Singapore Capital Holdings,Finance & FinTech,APAC,AI Predictive Engine,2023-02-25,120129.48,12,Renewed,4,3450,Elevated
+NXSP-2023-0006,Quantum Dynamics Labs,Aerospace & Defense,North America,Essential Analytics Pack,2023-02-27,29611.67,36,Completed,5,919,Elevated
+NXSP-2023-0007,Vertex Cloud Infrastructure,Enterprise Software,North America,Professional Cloud Core,2023-03-07,143965.51,12,Completed,6,4064,Medium
+NXSP-2023-0008,Titanium Metals Global,Manufacturing & Heavy Industry,North America,AI Predictive Engine,2023-03-12,130167.19,12,Completed,8,4725,Minimal
+NXSP-2023-0009,Panama Shipping Lines,Logistics & Supply Chain,Latin America,Professional Cloud Core,2023-03-20,107358.21,24,Pending,9,808,Low
+NXSP-2023-0010,Helvetia Wealth Partners,Finance & FinTech,EMEA,Enterprise Elite Suite,2023-03-30,223110.65,12,Completed,6,2091,Elevated
+NXSP-2023-0011,Titanium Metals Global,Manufacturing & Heavy Industry,North America,Growth Accelerator Tier,2023-04-08,64194.54,36,Renewed,9,1493,Low
+NXSP-2023-0012,Helvetia Wealth Partners,Finance & FinTech,EMEA,Essential Analytics Pack,2023-04-17,21678.38,36,Renewed,7,3315,Elevated
+NXSP-2023-0013,Helvetia Wealth Partners,Finance & FinTech,EMEA,Professional Cloud Core,2023-04-24,109546.11,12,Completed,8,3808,Low
+NXSP-2023-0014,Starlight CyberSec,Enterprise Software,North America,Enterprise Elite Suite,2023-04-30,221253.83,24,Pending,7,1288,Low
+NXSP-2023-0015,Cobalt Cloud Networks,Telecommunications,EMEA,Essential Analytics Pack,2023-05-05,28760.38,24,Completed,10,1645,Low
+NXSP-2023-0016,Indus AgriTech Innovations,Agriculture & IoT,APAC,Enterprise Elite Suite,2023-05-13,277329.37,12,Pending,9,4508,Minimal
+NXSP-2023-0017,Starlight CyberSec,Enterprise Software,North America,Professional Cloud Core,2023-05-18,101173.97,12,Pending,4,3005,Elevated
+NXSP-2023-0018,Sao Paulo Payments Inc,Finance & FinTech,Latin America,Enterprise Elite Suite,2023-05-25,273264.37,24,Completed,8,995,Minimal
+NXSP-2023-0019,Quantum Dynamics Labs,Aerospace & Defense,North America,Growth Accelerator Tier,2023-06-01,67273.49,36,Completed,10,1702,Low
+NXSP-2023-0020,Lumina Biopharma,Healthcare & Life Sciences,EMEA,Essential Analytics Pack,2023-06-17,23923.93,12,Pending,9,3618,Low
+NXSP-2023-0021,Cobalt Cloud Networks,Telecommunications,EMEA,AI Predictive Engine,2023-06-22,180463.34,24,Completed,8,874,Low
+NXSP-2023-0023,Helvetia Wealth Partners,Finance & FinTech,EMEA,Enterprise Elite Suite,2023-06-30,266665.36,12,Pending,9,4326,Low
+NXSP-2023-0022,Tokyo Robotics Corp,Manufacturing & Robotics,APAC,Enterprise Elite Suite,2023-07-02,237622.54,36,Completed,7,832,Minimal
+NXSP-2023-0024,Bavaria Auto Automation,Manufacturing & Automotive,EMEA,Essential Analytics Pack,2023-07-09,28126.94,36,Pending,5,4224,Medium
+NXSP-2023-0025,Pinnacle Asset Management,Finance & FinTech,North America,Growth Accelerator Tier,2023-07-18,38112.75,36,Renewed,10,3717,Low
+NXSP-2023-0026,Indus AgriTech Innovations,Agriculture & IoT,APAC,Enterprise Elite Suite,2023-08-01,247078.27,36,Completed,10,3129,Minimal
+NXSP-2023-0027,Pinnacle Asset Management,Finance & FinTech,North America,Enterprise Elite Suite,2023-08-02,203201.06,36,Renewed,10,1853,Low
+NXSP-2023-0028,Lumina Biopharma,Healthcare & Life Sciences,EMEA,Growth Accelerator Tier,2023-08-09,63858.04,12,Renewed,4,764,Elevated
+NXSP-2023-0029,Titanium Metals Global,Manufacturing & Heavy Industry,North America,Essential Analytics Pack,2023-08-14,31565.95,12,Completed,7,4293,Medium
+NXSP-2023-0030,Bavaria Auto Automation,Manufacturing & Automotive,EMEA,Growth Accelerator Tier,2023-08-21,40433.03,12,Renewed,10,2686,Low
+NXSP-2023-0032,Crestview Financial,Finance & FinTech,North America,Essential Analytics Pack,2023-09-05,28471.66,12,Completed,7,4469,Elevated
+NXSP-2023-0031,Seoul AI Diagnostics,Healthcare & Life Sciences,APAC,Essential Analytics Pack,2023-09-08,28057.72,12,Completed,8,829,Low
+NXSP-2023-0033,BioGenetics Australasia,Healthcare & Life Sciences,APAC,Essential Analytics Pack,2023-09-15,18796.31,36,Completed,7,906,Low
+NXSP-2023-0034,Cobalt Cloud Networks,Telecommunications,EMEA,Professional Cloud Core,2023-09-26,83392.06,36,Completed,4,1021,Elevated
+NXSP-2023-0035,Seoul AI Diagnostics,Healthcare & Life Sciences,APAC,Essential Analytics Pack,2023-10-06,25318.96,24,Completed,8,2525,Low
+NXSP-2023-0037,Starlight CyberSec,Enterprise Software,North America,Essential Analytics Pack,2023-10-13,19025.65,12,Pending,8,3209,Low
+NXSP-2023-0036,Pacific Rim Retail Ltd,Retail & Ecommerce,APAC,Professional Cloud Core,2023-10-15,120185.06,24,Completed,7,4104,Minimal
+NXSP-2023-0038,Oceanic Data Services,Telecommunications,APAC,Enterprise Elite Suite,2023-10-23,220105.07,12,Renewed,6,4683,Elevated
+NXSP-2023-0039,Apex Global Logistics,Logistics & Supply Chain,North America,Essential Analytics Pack,2023-10-31,31044.58,12,Completed,7,1226,Low
+NXSP-2023-0040,Panama Shipping Lines,Logistics & Supply Chain,Latin America,Essential Analytics Pack,2023-11-06,21812.87,36,Completed,8,2512,Low
+NXSP-2023-0041,Andes Energy Logistics,Energy & Utilities,Latin America,Growth Accelerator Tier,2023-11-15,64876.1,12,Completed,6,711,Medium
+NXSP-2023-0042,Apex Global Logistics,Logistics & Supply Chain,North America,AI Predictive Engine,2023-11-21,155525.77,24,Completed,7,429,Medium
+NXSP-2023-0043,Solaris Health Systems,Healthcare & Life Sciences,North America,Enterprise Elite Suite,2023-11-28,236831.08,24,Pending,5,3870,Elevated
+NXSP-2023-0044,Horizon Media Group,Media & Entertainment,North America,Enterprise Elite Suite,2023-12-08,219641.89,12,Completed,8,1192,Low
+NXSP-2023-0045,Singapore Capital Holdings,Finance & FinTech,APAC,Essential Analytics Pack,2023-12-17,31633.72,36,Completed,8,1800,Low
+NXSP-2023-0046,Oceanic Data Services,Telecommunications,APAC,Growth Accelerator Tier,2023-12-18,40918.9,24,Renewed,9,1654,Low
+NXSP-2024-0047,Pinnacle Asset Management,Finance & FinTech,North America,Enterprise Elite Suite,2024-01-01,267855.84,24,Completed,10,3214,Low
+NXSP-2024-0048,Aether Telecom UK,Telecommunications,EMEA,Professional Cloud Core,2024-01-05,76656.51,12,Renewed,9,918,Low
+NXSP-2024-0049,Aura BioSystems,Healthcare & Life Sciences,EMEA,AI Predictive Engine,2024-01-15,155940.77,24,Pending,7,1294,Low
+NXSP-2024-0050,Oceanic Data Services,Telecommunications,APAC,AI Predictive Engine,2024-01-19,150156.02,24,Completed,10,3181,Minimal
+NXSP-2024-0051,Panama Shipping Lines,Logistics & Supply Chain,Latin America,AI Predictive Engine,2024-01-31,152589.84,36,Completed,5,2436,Medium
+NXSP-2024-0052,Vertex Cloud Infrastructure,Enterprise Software,North America,Growth Accelerator Tier,2024-02-01,52157.37,36,Completed,10,923,Low
+NXSP-2024-0053,Cobalt Cloud Networks,Telecommunications,EMEA,AI Predictive Engine,2024-02-18,124821.99,12,Completed,6,3695,Elevated
+NXSP-2024-0054,Tokyo Robotics Corp,Manufacturing & Robotics,APAC,Growth Accelerator Tier,2024-02-20,53295.61,12,Renewed,5,2815,Medium
