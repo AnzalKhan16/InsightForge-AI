@@ -19,6 +19,7 @@ Enterprise-grade, deterministic business intelligence and strategic AI analytics
 - [Comprehensive QA Testing Matrix](docs/comprehensive_testing.md)
 - [Docker Containerization & Deployment](docs/docker_deployment.md)
 - [CI/CD Automation Pipeline](docs/cicd_pipeline.md)
+- [Cloud Deployment Guide (Vercel + Render)](docs/DEPLOYMENT_GUIDE.md)
 - [Production Architecture & Deployment](docs/production_deployment.md)
 
 ---

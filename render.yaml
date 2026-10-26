@@ -1,0 +1,42 @@
+# =============================================================================
+# InsightForge AI - Render.com Infrastructure Blueprint
+# Allows 1-click deployment of PostgreSQL database and FastAPI Backend
+# =============================================================================
+
+databases:
+  - name: insightforge-db
+    databaseName: insightforge
+    user: insightforge
+    region: oregon
+    plan: free
+    postgresMajorVersion: 16
+
+services:
+  - type: web
+    name: insightforge-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python scripts/seed_demo.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: IF_ENVIRONMENT
+        value: production
+      - key: IF_DEBUG
+        value: "false"
+      - key: IF_SECRET_KEY
+        generateValue: true
+      - key: IF_CORS_ORIGINS
+        value: "*"
+      - key: IF_DATABASE_URL
+        fromDatabase:
+          name: insightforge-db
+          property: connectionString
+      - key: IF_STORAGE_BACKEND
+        value: local
+      - key: IF_STORAGE_LOCAL_DIR
+        value: /tmp/data/raw
+      - key: PYTHON_VERSION
+        value: 3.11.9
