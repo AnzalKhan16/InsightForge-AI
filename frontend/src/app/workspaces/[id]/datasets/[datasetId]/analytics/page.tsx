@@ -276,15 +276,16 @@ export default function AnalyticsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
 
-  const loadReportDetails = async (reportId: string) => {
+  const loadReportDetails = async (reportId: string, activeAuthToken?: string) => {
+    const currentToken = activeAuthToken || token || useAuthStore.getState().token;
     try {
       setLoadingReportDetails(true);
       const rep = await apiFetch<ExecutiveReportItem>(`/workspaces/${workspaceId}/reports/${reportId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : undefined,
       });
       setActiveReport(rep);
     } catch (err: any) {
-      console.error("Failed to load report details", err);
+      console.warn("Could not load report details", err);
     } finally {
       setLoadingReportDetails(false);
     }
@@ -337,7 +338,7 @@ export default function AnalyticsPage() {
         setRecommendations(res.recommendations);
       }
     } catch (err: any) {
-      console.error('Failed to refresh recommendations', err);
+      console.warn('Failed to refresh recommendations', err);
     } finally {
       setLoadingRecommendations(false);
     }
@@ -668,11 +669,11 @@ export default function AnalyticsPage() {
       if (reps && Array.isArray(reps)) {
         setReportsList(reps);
         if (reps.length > 0 && reps[0].id) {
-          loadReportDetails(reps[0].id);
+          loadReportDetails(reps[0].id, currentToken);
         }
       }
     } catch (err: any) {
-      console.error("Failed to fetch analytics or insights", err);
+      console.warn("Failed to fetch analytics or insights", err);
       setFetchError(err.message || 'Failed to load analytics data.');
     } finally {
       setLoading(false);
