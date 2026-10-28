@@ -29,7 +29,7 @@ services:
       - key: IF_SECRET_KEY
         generateValue: true
       - key: IF_CORS_ORIGINS
-        value: "*"
+        value: '["*"]'
       - key: IF_DATABASE_URL
         fromDatabase:
           name: insightforge-db

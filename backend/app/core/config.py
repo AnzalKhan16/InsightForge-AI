@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     environment: str = "development"  # development | test | production
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
-    # Comma-separated list in env, e.g. IF_CORS_ORIGINS=http://localhost:3000
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # Comma-separated list or JSON array in env, e.g. IF_CORS_ORIGINS=* or IF_CORS_ORIGINS=http://localhost:3000
+    cors_origins: list[str] | str = ["http://localhost:3000"]
 
     # Auth
     secret_key: str = "super-secret-key-for-dev-only"
@@ -41,10 +41,17 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     gemini_api_key: str | None = None
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", mode="after")
     @classmethod
     def _split_origins(cls, v):
         if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    import json
+                    return json.loads(v)
+                except Exception:
+                    pass
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
