@@ -11,6 +11,10 @@ from app.core.config import get_settings
 def build_engine(url: str | None = None) -> Engine:
     s = get_settings()
     url = url or s.database_url
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
     if url.startswith("sqlite"):
         engine = create_engine(url, echo=s.db_echo)
 

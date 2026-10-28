@@ -167,4 +167,7 @@ def seed():
     print("=======================================================\n")
 
 if __name__ == "__main__":
-    seed()
+    try:
+        seed()
+    except Exception as e:
+        print(f"Seed notice (non-fatal): {e}")

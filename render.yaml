@@ -9,7 +9,7 @@ databases:
     user: insightforge
     region: oregon
     plan: free
-    postgresMajorVersion: 16
+    postgresMajorVersion: "16"
 
 services:
   - type: web
@@ -19,7 +19,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python scripts/seed_demo.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /api/v1/health
     envVars:
       - key: IF_ENVIRONMENT
