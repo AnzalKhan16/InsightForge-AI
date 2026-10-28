@@ -24,15 +24,18 @@ describe('HomePage & Interactive Analytics Dashboard', () => {
     vi.clearAllMocks();
   });
 
-  it('renders primary KPI cards with deterministic values and growth indicators', () => {
+  it('renders primary KPI cards with human-understandable values and indicators', () => {
     render(<HomePage />);
 
-    expect(screen.getByText('Global Retail & E-Commerce 2023')).toBeInTheDocument();
-    expect(screen.getByText('$77,772.70')).toBeInTheDocument();
-    expect(screen.getByText(/orders/i)).toBeInTheDocument();
-    expect(screen.getByText('$777.73')).toBeInTheDocument();
-    expect(screen.getByText(/categories/i)).toBeInTheDocument();
-    expect(screen.getByText(/annual growth trajectory/i)).toBeInTheDocument();
+    expect(screen.getByText('Metaversity_Selected_Members')).toBeInTheDocument();
+    expect(screen.getByText('Total Records')).toBeInTheDocument();
+    expect(screen.getByText('Members')).toBeInTheDocument();
+    expect(screen.getByText('Main Department')).toBeInTheDocument();
+    expect(screen.getAllByText('Technical Team').length).toBeGreaterThan(0);
+    expect(screen.getByText('Details Tracked')).toBeInTheDocument();
+    expect(screen.getByText('Columns')).toBeInTheDocument();
+    expect(screen.getByText('Data Health')).toBeInTheDocument();
+    expect(screen.getByText('100% Clean')).toBeInTheDocument();
   });
 
   it('renders all 6 interactive dashboard navigation tabs', () => {
@@ -46,54 +49,54 @@ describe('HomePage & Interactive Analytics Dashboard', () => {
     expect(screen.getByRole('button', { name: /Executive Briefing/i })).toBeInTheDocument();
   });
 
-  it('switches to AI Strategic Insights tab and displays findings and facts', () => {
+  it('switches to AI Strategic Insights tab and displays plain-English findings', () => {
     render(<HomePage />);
 
     const insightsTab = screen.getByRole('button', { name: /AI Strategic Insights/i });
     fireEvent.click(insightsTab);
 
-    expect(screen.getByText(/Synthesized Executive Findings/i)).toBeInTheDocument();
-    expect(screen.getByText(/Topline Growth Acceleration/i)).toBeInTheDocument();
-    expect(screen.getByText(/High Account Concentration/i)).toBeInTheDocument();
-    expect(screen.getByText(/Healthy Unit Economics/i)).toBeInTheDocument();
+    expect(screen.getByText(/Key Findings Explained in Plain English/i)).toBeInTheDocument();
+    expect(screen.getByText(/100% Technical Team Concentration/i)).toBeInTheDocument();
+    expect(screen.getByText(/Data Health: 100% Complete & Clean/i)).toBeInTheDocument();
+    expect(screen.getByText(/7 Dedicated Non-Overlapping Slots/i)).toBeInTheDocument();
   });
 
-  it('switches to Predictive Forecasting tab and displays horizon table', () => {
+  it('switches to Predictive Forecasting tab and displays interview timeline schedule', () => {
     render(<HomePage />);
 
     const forecastTab = screen.getByRole('button', { name: /Predictive Forecasting/i });
     fireEvent.click(forecastTab);
 
-    expect(screen.getByText(/Forward-Looking Demand Projections/i)).toBeInTheDocument();
-    expect(screen.getByText(/Holt Linear Trend/i)).toBeInTheDocument();
-    expect(screen.getByText('+1 Month')).toBeInTheDocument();
-    expect(screen.getByText('+6 Months')).toBeInTheDocument();
+    expect(screen.getByText(/Candidate Interview Schedule & Timeline/i)).toBeInTheDocument();
+    expect(screen.getByText('Slot 1')).toBeInTheDocument();
+    expect(screen.getByText('Slot 7')).toBeInTheDocument();
+    expect(screen.getByText('ABHISHEK KUMAR')).toBeInTheDocument();
   });
 
-  it('switches to Anomaly Audit tab and displays detected deviations', () => {
+  it('switches to Anomaly Audit tab and displays data quality checklist', () => {
     render(<HomePage />);
 
     const anomaliesTab = screen.getByRole('button', { name: /Anomaly Audit/i });
     fireEvent.click(anomaliesTab);
 
-    expect(screen.getByText(/Data Integrity & Anomaly Risk Audit/i)).toBeInTheDocument();
-    expect(screen.getByText(/Confirmed Invariant Violation/i)).toBeInTheDocument();
-    expect(screen.getByText(/High-Value Statistical Outlier/i)).toBeInTheDocument();
+    expect(screen.getByText(/Data Quality & Integrity Audit/i)).toBeInTheDocument();
+    expect(screen.getByText(/Missing Data Audit/i)).toBeInTheDocument();
+    expect(screen.getByText(/Duplicate Record Audit/i)).toBeInTheDocument();
+    expect(screen.getByText(/Schedule Overlap Audit/i)).toBeInTheDocument();
   });
 
-  it('switches to Customer Segmentation tab and renders RFM cohorts', () => {
+  it('switches to Customer Segmentation tab and renders cohort breakdown', () => {
     render(<HomePage />);
 
     const segmentsTab = screen.getByRole('button', { name: /Customer Segmentation/i });
     fireEvent.click(segmentsTab);
 
-    expect(screen.getByText(/Customer RFM & Behavioral Segmentation/i)).toBeInTheDocument();
-    expect(screen.getByText('Champions')).toBeInTheDocument();
-    expect(screen.getByText('Loyal Customers')).toBeInTheDocument();
-    expect(screen.getByText('At Risk VIPs')).toBeInTheDocument();
+    expect(screen.getByText(/Departments & Cohort Groups/i)).toBeInTheDocument();
+    expect(screen.getByText('Technical Department')).toBeInTheDocument();
+    expect(screen.getByText(/100% Roster/i)).toBeInTheDocument();
   });
 
-  it('switches to Executive Briefing tab and renders export buttons', () => {
+  it('switches to Executive Briefing tab and renders export buttons and records table', () => {
     render(<HomePage />);
 
     const reportTab = screen.getByRole('button', { name: /Executive Briefing/i });
@@ -105,3 +108,4 @@ describe('HomePage & Interactive Analytics Dashboard', () => {
     expect(screen.getByRole('button', { name: /Print \/ PDF/i })).toBeInTheDocument();
   });
 });
+

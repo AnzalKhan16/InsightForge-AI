@@ -114,6 +114,45 @@ def get_dataset(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user: Ac
     return dataset
 
 
+@router.get("/workspaces/{workspace_id}/datasets/{dataset_id}/preview")
+def get_dataset_preview(
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    current_user: ActiveUser,
+    session: SessionDep,
+    limit: int = 100
+):
+    _check_workspace_access(session, workspace_id, current_user.id)
+    repo = DatasetRepository(session)
+    dataset = repo.get_by_id_and_workspace(dataset_id, workspace_id)
+    if not dataset or not dataset.versions:
+        raise HTTPException(status_code=404, detail="Dataset or version not found")
+    
+    latest_version = dataset.versions[-1]
+    storage = get_storage()
+    file_obj = storage.get_file(latest_version.raw_storage_key)
+    file_bytes = file_obj.read()
+    file_obj.close()
+
+    import io
+    import pandas as pd
+    from app.db.enums import DatasetFormat
+
+    if latest_version.format == DatasetFormat.CSV:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    elif latest_version.format in (DatasetFormat.XLSX, DatasetFormat.XLS):
+        df = pd.read_excel(io.BytesIO(file_bytes))
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {latest_version.format}")
+
+    clean_df = df.head(limit).where(pd.notnull(df), None)
+    return {
+        "columns": [str(c) for c in df.columns],
+        "total_rows": int(len(df)),
+        "rows": clean_df.to_dict(orient="records")
+    }
+
+
 @router.delete("/workspaces/{workspace_id}/datasets/{dataset_id}", status_code=204)
 def delete_dataset(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user: ActiveUser, session: SessionDep):
     _check_workspace_access(session, workspace_id, current_user.id)
