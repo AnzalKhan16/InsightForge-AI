@@ -163,8 +163,8 @@ def delete_dataset(workspace_id: uuid.UUID, dataset_id: uuid.UUID, current_user:
     
     import datetime
     dataset.deleted_at = datetime.datetime.now(datetime.UTC)
-    session.flush()
-    return None
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.post("/workspaces/{workspace_id}/datasets/{dataset_id}/clean")

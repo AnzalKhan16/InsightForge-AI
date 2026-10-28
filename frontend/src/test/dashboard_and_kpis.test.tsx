@@ -27,7 +27,7 @@ describe('HomePage & Interactive Analytics Dashboard', () => {
   it('renders primary KPI cards with human-understandable values and indicators', () => {
     render(<HomePage />);
 
-    expect(screen.getByText('Metaversity_Selected_Members')).toBeInTheDocument();
+    expect(screen.getAllByText('Metaversity_Selected_Members').length).toBeGreaterThan(0);
     expect(screen.getByText('Total Records')).toBeInTheDocument();
     expect(screen.getByText('Members')).toBeInTheDocument();
     expect(screen.getByText('Main Department')).toBeInTheDocument();
@@ -106,6 +106,26 @@ describe('HomePage & Interactive Analytics Dashboard', () => {
     expect(screen.getByRole('button', { name: /Download .HTML/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Download .MD/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Print \/ PDF/i })).toBeInTheDocument();
+  });
+
+  it('renders No Dataset Loaded empty state when no dataset is entered', () => {
+    render(<HomePage initialDatasetId="" />);
+
+    expect(screen.getByText('No Dataset Loaded')).toBeInTheDocument();
+    expect(screen.getByText(/Upload your CSV or Excel file above to generate instant visual charts/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Visual Charts & Trends/i })).not.toBeInTheDocument();
+  });
+
+  it('renders Remove Dataset option below drag and drop, and removes dataset on click', async () => {
+    render(<HomePage />);
+
+    const removeBtns = screen.getAllByRole('button', { name: /Remove Dataset/i });
+    expect(removeBtns.length).toBeGreaterThan(0);
+
+    fireEvent.click(removeBtns[0]);
+
+    expect(await screen.findByText(/has been successfully removed/i)).toBeInTheDocument();
+    expect(screen.getByText('No Dataset Loaded')).toBeInTheDocument();
   });
 });
 
