@@ -129,7 +129,7 @@ We have provided a complete Infrastructure-as-Code blueprint file in the reposit
    - **Email**: `demo@insightforge.ai`
    - **Password**: `password123`
 4. Access the Analytics Suite:
-   `https://your-app.vercel.app/workspaces/88e9b75e-944d-4031-8d00-d3d5d1541818/datasets/6655e6d0-8986-4d4d-a0b1-2bb30f5ceada/analytics`
+   `https://your-app.vercel.app/workspaces/8ffe64dc-8fd5-4b58-b5c5-97c19a3551b4/datasets/5e7f614c-fc40-4f80-a443-49a9c22d1a1f/analytics`
 5. Test uploading a new CSV dataset or the sample PDF dataset (`NexusSphere_Enterprise_Sales_2023_2024.pdf`).
 
 ---

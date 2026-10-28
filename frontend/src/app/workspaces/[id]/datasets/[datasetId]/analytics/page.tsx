@@ -674,6 +674,27 @@ export default function AnalyticsPage() {
       }
     } catch (err: any) {
       console.warn("Failed to fetch analytics or insights", err);
+      // Auto-recover if workspace or dataset ID doesn't exist (e.g. freshly deployed cloud DB)
+      if (err.status === 404 || err.message?.includes('not found') || err.message?.includes('access denied')) {
+        try {
+          const workspaces = await apiFetch<any[]>('/workspaces', {
+            headers: { Authorization: `Bearer ${currentToken}` },
+          });
+          if (workspaces && workspaces.length > 0) {
+            const firstWs = workspaces[0];
+            const datasets = await apiFetch<any[]>(`/workspaces/${firstWs.id}/datasets`, {
+              headers: { Authorization: `Bearer ${currentToken}` },
+            });
+            if (datasets && datasets.length > 0) {
+              const firstDs = datasets[0];
+              router.replace(`/workspaces/${firstWs.id}/datasets/${firstDs.id}/analytics`);
+              return;
+            }
+          }
+        } catch (discoverErr) {
+          console.warn("Auto-discovery failed", discoverErr);
+        }
+      }
       setFetchError(err.message || 'Failed to load analytics data.');
     } finally {
       setLoading(false);
@@ -890,12 +911,43 @@ export default function AnalyticsPage() {
               <h3 className="text-lg font-bold text-white mb-1">Failed to Load Analytics Suite</h3>
               <p className="text-xs text-rose-300/80 max-w-md">{fetchError}</p>
             </div>
-            <button
-              onClick={() => fetchData()}
-              className="mt-2 px-5 py-2.5 rounded-full bg-[#ff3c02] hover:bg-[#fa7041] text-white text-xs font-bold transition-all shadow-lg shadow-[#ff3c02]/25"
-            >
-              Retry Connection
-            </button>
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const currentToken = token || useAuthStore.getState().token;
+                    if (currentToken) {
+                      const workspaces = await apiFetch<any[]>('/workspaces', {
+                        headers: { Authorization: `Bearer ${currentToken}` },
+                      });
+                      if (workspaces && workspaces.length > 0) {
+                        const firstWs = workspaces[0];
+                        const datasets = await apiFetch<any[]>(`/workspaces/${firstWs.id}/datasets`, {
+                          headers: { Authorization: `Bearer ${currentToken}` },
+                        });
+                        if (datasets && datasets.length > 0) {
+                          router.replace(`/workspaces/${firstWs.id}/datasets/${datasets[0].id}/analytics`);
+                          return;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                  fetchData();
+                }}
+                className="px-5 py-2.5 rounded-full bg-[#ff3c02] hover:bg-[#fa7041] text-white text-xs font-bold transition-all shadow-lg shadow-[#ff3c02]/25"
+              >
+                Auto-Discover Workspace & Retry
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold transition-all border border-white/10"
+              >
+                Return to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>

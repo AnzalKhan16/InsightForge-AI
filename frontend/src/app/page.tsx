@@ -21,8 +21,8 @@ export default function HomePage() {
   const { token, user, setAuth } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'charts' | 'insights' | 'forecast' | 'anomalies' | 'segments' | 'report'>('charts');
   const [loading, setLoading] = useState(false);
-  const [workspaceId, setWorkspaceId] = useState<string>('88e9b75e-944d-4031-8d00-d3d5d1541818');
-  const [datasetId, setDatasetId] = useState<string>('6655e6d0-8986-4d4d-a0b1-2bb30f5ceada');
+  const [workspaceId, setWorkspaceId] = useState<string>('8ffe64dc-8fd5-4b58-b5c5-97c19a3551b4');
+  const [datasetId, setDatasetId] = useState<string>('5e7f614c-fc40-4f80-a443-49a9c22d1a1f');
   const [datasetName, setDatasetName] = useState<string>('Global Retail & E-Commerce 2023');
   const [isMounted, setIsMounted] = useState(false);
 
@@ -149,7 +149,56 @@ export default function HomePage() {
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const discoverWorkspace = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        let currentToken = token;
+        if (!currentToken) {
+          const loginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              username: 'demo@insightforge.ai',
+              password: 'password123',
+            }),
+          });
+          if (loginRes.ok) {
+            const authData = await loginRes.json();
+            currentToken = authData.access_token;
+            setAuth(authData.access_token, {
+              id: 'demo-user-id',
+              email: 'demo@insightforge.ai',
+              full_name: 'Executive Demo User',
+            });
+          }
+        }
+        if (currentToken) {
+          const wsRes = await fetch(`${baseUrl}/api/v1/workspaces`, {
+            headers: { Authorization: `Bearer ${currentToken}` },
+          });
+          if (wsRes.ok) {
+            const workspaces = await wsRes.json();
+            if (workspaces && workspaces.length > 0) {
+              setWorkspaceId(workspaces[0].id);
+              const dsRes = await fetch(`${baseUrl}/api/v1/workspaces/${workspaces[0].id}/datasets`, {
+                headers: { Authorization: `Bearer ${currentToken}` },
+              });
+              if (dsRes.ok) {
+                const datasets = await dsRes.json();
+                if (datasets && datasets.length > 0) {
+                  setDatasetId(datasets[0].id);
+                  setDatasetName(datasets[0].name);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Workspace discovery notice', err);
+      }
+    };
+    discoverWorkspace();
+  }, [token]);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
