@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/lib/auth';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 import { 
@@ -172,7 +172,7 @@ export default function HomePage(props?: any) {
   const loadDatasetData = async (targetDatasetId: string, wsId: string, currentToken: string) => {
     setLoadingDatasetData(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const baseUrl = getApiBaseUrl();
       
       // 1. Fetch dataset meta
       const dsRes = await fetch(`${baseUrl}/api/v1/workspaces/${wsId}/datasets/${targetDatasetId}`, {
@@ -407,7 +407,7 @@ export default function HomePage(props?: any) {
     setRemoveSuccess(null);
     setUploadError(null);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const baseUrl = getApiBaseUrl();
       let activeToken = token;
       if (!activeToken) {
         const authStore = useAuthStore.getState();
@@ -460,7 +460,7 @@ export default function HomePage(props?: any) {
     setIsMounted(true);
     const discoverWorkspace = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        const baseUrl = getApiBaseUrl();
         let currentToken = token;
         if (!currentToken) {
           const loginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
@@ -560,7 +560,7 @@ export default function HomePage(props?: any) {
 
     try {
       let activeToken = token;
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const baseUrl = getApiBaseUrl();
       if (!activeToken) {
         const loginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
           method: 'POST',

@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
     # Comma-separated list or JSON array in env, e.g. IF_CORS_ORIGINS=* or IF_CORS_ORIGINS=http://localhost:3000
-    cors_origins: list[str] | str = ["http://localhost:3000"]
+    cors_origins: list[str] | str = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://insight-forge-ai-orcin.vercel.app",
+    ]
 
     # Auth
     secret_key: str = "super-secret-key-for-dev-only"
@@ -41,7 +45,7 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     gemini_api_key: str | None = None
 
-    @field_validator("cors_origins", mode="after")
+    @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v):
         if isinstance(v, str):

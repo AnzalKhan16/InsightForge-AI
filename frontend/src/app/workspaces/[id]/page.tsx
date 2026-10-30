@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { 
@@ -73,7 +73,7 @@ export default function WorkspacePage() {
     formData.append('name', file.name.split('.')[0]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/datasets`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/v1/workspaces/${workspaceId}/datasets`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`

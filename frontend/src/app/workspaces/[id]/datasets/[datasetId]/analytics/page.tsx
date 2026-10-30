@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/lib/auth';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { 
@@ -275,6 +275,7 @@ export default function AnalyticsPage() {
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   const loadReportDetails = async (reportId: string, activeAuthToken?: string) => {
     const currentToken = activeAuthToken || token || useAuthStore.getState().token;
@@ -322,7 +323,7 @@ export default function AnalyticsPage() {
       }
       setReportTitleInput('');
     } catch (err: any) {
-      alert(err.message || 'Failed to compile executive report');
+      setActionNotice({ type: 'error', message: err.message || 'Failed to compile executive report' });
     } finally {
       setGeneratingReport(false);
     }
@@ -347,11 +348,11 @@ export default function AnalyticsPage() {
   const handleDownloadReport = async (fmt: 'markdown' | 'html' | 'json' = 'markdown', rep?: ExecutiveReportItem | null) => {
     const target = rep || activeReport;
     if (!target) {
-      alert("No report available for download");
+      setActionNotice({ type: 'error', message: "No report available for download" });
       return;
     }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/reports/${target.id}/download?format=${fmt}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/v1/workspaces/${workspaceId}/reports/${target.id}/download?format=${fmt}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -409,7 +410,7 @@ export default function AnalyticsPage() {
     const target = rep || activeReport;
     if (!target) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/workspaces/${workspaceId}/reports/${target.id}/view`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/v1/workspaces/${workspaceId}/reports/${target.id}/view`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -749,7 +750,7 @@ export default function AnalyticsPage() {
       let currentToken = token;
       if (!currentToken || !user) {
         try {
-          const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/login`, {
+          const loginRes = await fetch(`${getApiBaseUrl()}/api/v1/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
@@ -808,7 +809,7 @@ export default function AnalyticsPage() {
         }
       }, 2000);
     } catch (err: any) {
-      alert(err.message || 'Failed to start analytics job');
+      setActionNotice({ type: 'error', message: err.message || 'Failed to start analytics job' });
       setSubmittingAnalysis(false);
     }
   };
@@ -838,7 +839,7 @@ export default function AnalyticsPage() {
         }
       }, 2000);
     } catch (err: any) {
-      alert(err.message || 'Failed to start insight generation');
+      setActionNotice({ type: 'error', message: err.message || 'Failed to start insight generation' });
       setSubmittingInsights(false);
     }
   };
@@ -997,6 +998,37 @@ export default function AnalyticsPage() {
           </button>
         </div>
       </header>
+
+      {/* Action Notice / Status Banner */}
+      {actionNotice && (
+        <div className={`mb-6 p-4 rounded-2xl flex items-start justify-between gap-4 border transition-all ${
+          actionNotice.type === 'error' 
+            ? 'bg-[#180a0a] border-rose-500/40 text-rose-200 shadow-lg shadow-rose-950/20' 
+            : 'bg-[#0a180e] border-emerald-500/40 text-emerald-200 shadow-lg shadow-emerald-950/20'
+        }`}>
+          <div className="flex items-start gap-3">
+            {actionNotice.type === 'error' ? (
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="text-sm font-semibold">{actionNotice.message}</p>
+              {actionNotice.type === 'error' && (
+                <p className="text-xs text-rose-300/70 mt-1">
+                  Tip: If using the cloud backend, the free Render tier may take 30–50s to wake up from idle.
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setActionNotice(null)}
+            className="text-xs text-[#9ca3af] hover:text-white px-2 py-1 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Navigation Tabs - Cryptox Pill Navigation */}
       <div className="flex flex-wrap items-center justify-between border-b border-white/10 mb-8 pb-4 gap-4">
